@@ -1,7 +1,8 @@
-# Доп. проверки: заморозка позы при рисовании, предупреждение о недоступной памяти, Ctrl+колёсико по развёртке
 import os, sys, pathlib, tempfile; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from env import APP, URL, launch
 INSTR = os.path.join(tempfile.gettempdir(), 'instr.html')
+import os
+# Доп. проверки: заморозка позы при рисовании, предупреждение о недоступной памяти, Ctrl+колёсико по развёртке
 from playwright.sync_api import sync_playwright
 res=[]
 with sync_playwright() as p:
@@ -20,10 +21,10 @@ with sync_playwright() as p:
     res.append(('все 100 шаблонов выглядят по-разному',t['uniq']==100,t['uniq']))
     res.append(('длинных причёсок в шаблонах ≥ 40',pg.evaluate("()=>TEMPLATES.filter(t=>LONG_HAIR.includes(t.s.hair)).length")>=40))
     pg.evaluate("()=>go(0)");pg.wait_for_function("()=>TPL_THUMB.filter(Boolean).length===100",timeout=20000)
-    before=pg.evaluate("()=>JSON.stringify(state)");pg.click('.tplc >> nth=20');pg.wait_for_timeout(200)
+    before=pg.evaluate("()=>JSON.stringify(state)");pg.click('.tplt >> nth=20');pg.wait_for_timeout(200)
     res.append(('клик по шаблону ставит его',pg.evaluate("()=>state.hair===TEMPLATES[20].s.hair&&state.top===TEMPLATES[20].s.top")))
     pg.keyboard.press('Control+z');pg.wait_for_timeout(200);res.append(('Ctrl+Z возвращает прошлого персонажа',pg.evaluate("()=>JSON.stringify(state)")==before))
-    pg.click('.tplf button >> nth=3');pg.wait_for_timeout(200);res.append(('фильтр «Длинные волосы»',pg.evaluate("()=>[...document.querySelectorAll('.tplc')].every(b=>LONG_HAIR.includes(TEMPLATES[+b.dataset.i].s.hair))&&document.querySelectorAll('.tplc').length>=40")))
+    pg.click('.tplf button >> nth=3');pg.wait_for_timeout(200);res.append(('фильтр «Длинные волосы»',pg.evaluate("()=>[...document.querySelectorAll('.tplt')].every(b=>LONG_HAIR.includes(TEMPLATES[+b.dataset.i].s.hair))&&document.querySelectorAll('.tplt').length>=40")))
     res.append(('простой вид: правая колонка скрыта в конструкторе',pg.evaluate("()=>document.body.classList.contains('simple')&&getComputedStyle(document.querySelector('.side.right')).display==='none'")))
     pg.evaluate("()=>goMode('paint')");pg.wait_for_timeout(200)
     res.append(('простой вид: палитра видна, структура скрыта при рисовании',pg.evaluate("()=>getComputedStyle(document.getElementById('pnlPal')).display!=='none'&&getComputedStyle(document.getElementById('pnlOut')).display==='none'")))
@@ -57,7 +58,7 @@ with sync_playwright() as p:
     r=pg.evaluate("""()=>{setSimple(true);goMode('paint');resetEdits();setPaint('#ff0000');paintColor2='#0000ff';tool='dither';
       strokeStart([20,22],{button:0});strokeMove([23,22],true);strokeEnd();const row=[20,21,22,23].map(x=>curPx(x,22).slice(0,3).join());tool='brush';return row}""")
     res.append(('сетка чередует основной и второй цвет',r==['255,0,0','0,0,255','255,0,0','0,0,255'],r))
-    pg.evaluate("()=>{applyTemplate(60);go(0)}");pg.wait_for_timeout(2900);bx=pg.locator('.tplc').nth(4).bounding_box()
+    pg.evaluate("()=>{applyTemplate(60);go(0)}");pg.wait_for_timeout(2900);bx=pg.locator('.tplt').nth(4).bounding_box()
     pg.mouse.move(bx['x']+40,bx['y']+40);pg.wait_for_timeout(450);on=pg.evaluate("()=>[tplPrev,builtModel,state.model,JSON.parse(localStorage.getItem('mcskin.state.v1')).hair===state.hair]")
     pg.mouse.move(900,500);pg.wait_for_timeout(350);off=pg.evaluate("()=>[tplPrev,builtModel===state.model]")
     res.append(('примерка шаблона при наведении и возврат',on[0]==4 and on[1]!=on[2] and on[3] and off==[-1,True],[on,off]))
@@ -75,6 +76,23 @@ with sync_playwright() as p:
     r=pg.evaluate("""()=>{goMode('paint');const c=renderPNG(256,'#88aacc');refCv=c;refPalCache=null;renderRef();palMode='ref';renderPalette();
       const n=document.querySelectorAll('#paletteBody .pal button').length;document.getElementById('refClear').click();return [n,palMode]}""")
     res.append(('палитра из образца',r[0]>=8 and r[1]=='def',r))
+    r=pg.evaluate("""()=>{localStorage.removeItem('mcskin.slots.v1');window._slots=null;applyTemplate(30);go(0);document.querySelector('.addslot').click();
+      applyTemplate(5);go(0);const card=document.querySelector('.myrow .tplc:not(.addslot)');card.click();const loaded=state.hair===TEMPLATES[30].s.hair;
+      go(0);document.querySelector('.myrow .tplc .x').click();return [loaded,getSlots().filter(Boolean).length]}""")
+    res.append(('«Мои персонажи» во вкладке шаблонов: сохранить, загрузить, удалить',r==[True,0],r))
+    code=os.environ.get('GIFT_CODE','')  # сам код в тестах не хранится: задаётся переменной окружения
+    r=pg.evaluate("""(code)=>{setGift(null);const before=document.documentElement.outerHTML;openCode();const i=document.querySelector('#mBody input');
+      i.value='неверно';i.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'}));const bad=document.body.classList.contains('gift');if(!code){closeModal();return [bad,null]}
+      i.value=code;i.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'}));const good=document.body.classList.contains('gift')&&document.title===GT.brand&&$('#brandName').textContent===GT.brand;
+      const stored=localStorage.getItem('mcskin.d')||'',low=s=>s.toLowerCase(),c=low(code);
+      const hidden=!before.includes(GT.brand)&&!before.includes(GT.hi)&&!low(before).includes(c)&&!low(stored).includes(c);
+      setGift(null);return [bad,good,hidden,document.body.classList.contains('gift')]}""",code)
+    res.append(('особый режим: чужой код не подходит'+('; свой включает, тексты и код не видны в странице, выключается' if code else ' (GIFT_CODE не задан — включение не проверялось)'),
+                r==[False,True,True,False] if code else r[0] is False,r))
+    pg.evaluate("()=>localStorage.setItem('mcskin.d','1')")
+    pg.reload();pg.wait_for_timeout(700)
+    r=pg.evaluate("()=>[giftMode,document.body.classList.contains('gift'),localStorage.getItem('mcskin.d')]");pg.evaluate("()=>localStorage.removeItem('mcskin.d')")
+    res.append(('старая метка «1» без кода режим не включает',r[0] is False and r[1] is False,r))
     res.append(('нет ошибок',not errs))
     pg2=b.new_page();e2=[];pg2.on('pageerror',lambda e:e2.append(str(e)))
     pg2.add_init_script("Storage.prototype.setItem=function(){throw new Error('QuotaExceeded')}")
