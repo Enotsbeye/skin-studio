@@ -4,7 +4,7 @@
 
 **Открыть в браузере:** https://enotsbeye.github.io/skin-studio/
 
-**Скачать программу для Windows:** [SkinStudio-Windows.zip](https://github.com/Enotsbeye/skin-studio/releases/latest/download/SkinStudio-Windows.zip) — один файл `SkinStudio.exe` (~3 МБ), своё окно, работает без интернета.
+**Скачать программу для Windows:** [SkinStudio-Windows.zip](https://github.com/Enotsbeye/skin-studio/raw/main/download/SkinStudio-Windows.zip) — один файл `SkinStudio.exe` (~3 МБ), своё окно, работает без интернета.
 
 ![Шаблоны и конструктор](docs/templates.png)
 
