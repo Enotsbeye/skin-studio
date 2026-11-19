@@ -1144,8 +1144,8 @@ function paint(s){
 }
 /* Female Gender Mod берёт для груди куски второго слоя куртки (строки 34–43). Поднятые туда воротник, лямки и детали
    в игре висели бы на груди серой «полкой» снизу и обрывками спереди — для этой фигуры возвращаем их на основной слой.
-   Волосы не трогаем: пряди поверх груди выглядят естественно */
-function gmChest(hairM){for(let y=34;y<44;y++)for(let x=17;x<31;x++){const i=y*64+x,j=i*4;if(!B[j+3]||hairM[i])continue;
+   Пряди волос тоже: на объёмной груди они висели бы в воздухе косыми полосками, а на основном слое лежат по груди */
+function gmChest(hairM){for(let y=34;y<44;y++)for(let x=17;x<31;x++){const i=y*64+x,j=i*4;if(!B[j+3])continue;
   const b=(i-1024)*4;if(B[j+3]===255){B[b]=B[j];B[b+1]=B[j+1];B[b+2]=B[j+2];B[b+3]=255}B[j]=B[j+1]=B[j+2]=B[j+3]=0}}
 
 /* ================= thumbnails (flat front / back views) ================= */
@@ -2152,7 +2152,7 @@ async function natSaveUI(fn,blob,okMsg){// true/false, как и обычное 
     toastAction(okMsg,'Показать в папке',()=>natShow(p));return true}
   catch(e){toast('Не получилось сохранить файл: '+((e&&e.message)||'нет доступа к папке'));return false}}
 /* обновления программы: на сайте лежит version.json с номером свежей версии. Скачивание — только со страницы релизов этого проекта */
-const APP_VERSION='1.3.1';// единственное место с номером версии: отсюда же его берёт сборка программы
+const APP_VERSION='1.3.2';// единственное место с номером версии: отсюда же его берёт сборка программы
 const UPD_URL='https://enotsbeye.github.io/skin-studio/version.json',REL_OK=/^https:\/\/github\.com\/Enotsbeye\/skin-studio\//;
 // ссылка «Поддержать» берётся с сайта (version.json → donate) — её можно поменять без выпуска новой версии; только известные сервисы
 const DONATE_OK=/^https:\/\/(ko-fi\.com|boosty\.to|www\.buymeacoffee\.com|buymeacoffee\.com|paypal\.me|www\.paypal\.me|github\.com\/sponsors|patreon\.com|www\.patreon\.com)\//;

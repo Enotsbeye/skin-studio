@@ -113,9 +113,9 @@ with sync_playwright() as p:
     res.append(('3D: мазок перерисовывает только свою грань, цвет и свет верные, «До/после» работает',r[0]==1 and r[1] and r[2] and r[3],r))
     r=pg.evaluate("()=>[!!$('#platModel').querySelector('.platbox'),!$('#model').querySelector('.platbox'),[...document.querySelectorAll('#model .face')].every(e=>!e.style.filter)]")
     res.append(('подставка в своём 3D-слое, у граней нет CSS-фильтров',r==[True,True,True],r))
-    r=pg.evaluate("""()=>{let bad=[];for(let t=0;t<100;t+=3){const st=Object.assign(tplState(t),{figure:'gendermod',hair:'bald',beard:'none'});const px=paint(st);let n=0;
+    r=pg.evaluate("""()=>{let bad=[];for(let t=0;t<100;t+=3){const st=Object.assign(tplState(t),{figure:'gendermod'});const px=paint(st);let n=0;
       for(let y=34;y<44;y++)for(let x=17;x<31;x++)if(px[(y*64+x)*4+3])n++;if(n)bad.push(TEMPLATES[t].n+':'+n)}return bad}""")
-    res.append(('Female Gender Mod: на груди нет висящих кусков второго слоя (без волос и бороды)',not r,r[:5]))
+    res.append(('Female Gender Mod: на груди нет висящих кусков второго слоя (включая пряди волос)',not r,r[:5]))
     r=pg.evaluate("""async()=>{const of=window.fetch;const ans=v=>window.fetch=async()=>({ok:true,json:async()=>v});
       const menuHas=t=>{openMenu&&0;return MENUS.help.some(it=>it.l&&it.l.includes(t)&&(!it.show||it.show()))};
       ans({version:'1.2.0',donate:'https://evil.example/pay'});await siteInfo();const bad=!DONATE&&!menuHas('Поддержать');
