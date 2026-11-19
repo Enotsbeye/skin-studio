@@ -1,5 +1,8 @@
 # Скин-студия — редактор скинов Minecraft
 
+> Не официальный продукт Minecraft. Не одобрен Mojang или Microsoft и не связан с ними.
+> NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
+
 Редактор скинов прямо в браузере: собери персонажа из готовых деталей, дорисуй руками на 3D-модели и скачай PNG для Java и Bedrock. Работает без установки и без интернета — это один файл `index.html`.
 
 **Открыть в браузере:** https://enotsbeye.github.io/skin-studio/
@@ -100,3 +103,6 @@ playwright install chromium
 ```
 
 Свой Chrome вместо Chromium: `CHROME=/путь/к/chrome ./tests/all.sh`.
+
+## Лицензии
+Программа для Windows сделана на [Neutralino.js](https://github.com/neutralinojs/neutralinojs) (MIT). Полный текст лицензий — в `desktop/THIRD-PARTY-NOTICES.txt` и в архиве рядом с программой.

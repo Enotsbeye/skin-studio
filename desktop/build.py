@@ -10,7 +10,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 APP = os.environ.get('APP') or next(p for p in [os.path.join(HERE, '..', 'index.html'), '/home/claude/skin-creator.html'] if os.path.exists(p))
 PROJ = os.path.join(HERE, '.app')        # рабочая папка Neutralino (создаётся сама)
 OUT = os.path.join(HERE, 'dist')          # сюда кладётся готовый архив
-VERSION = sys.argv[1] if len(sys.argv) > 1 else '1.0.0'
+_src = open(APP, encoding='utf-8').read()
+_m = re.search(r"const APP_VERSION='([0-9.]+)'", _src)
+VERSION = _m.group(1) if _m else (sys.argv[1] if len(sys.argv) > 1 else '1.0.0')  # номер версии — из самого приложения
 PORT = 47815  # постоянный порт: от него зависит, где WebView2 хранит сохранённые данные (localStorage)
 NL = '6.10.0'
 
@@ -98,9 +100,15 @@ readme = """Скин-студия — редактор скинов Minecraft (�
 не переименовывай SkinStudio.exe, иначе программа начнёт с чистого листа.
 
 Нужен Windows 10 или 11 (компонент WebView2 там уже стоит).
+
+Не официальный продукт Minecraft. Не одобрен Mojang или Microsoft и не связан с ними.
+NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
+
+Программа сделана на Neutralino.js (MIT) — лицензии в THIRD-PARTY-NOTICES.txt.
 """.format(v=VERSION)
 zp = out + '/SkinStudio-Windows.zip'
 with zipfile.ZipFile(zp, 'w', zipfile.ZIP_DEFLATED) as z:
     z.write(d + '/SkinStudio-win_x64.exe', 'SkinStudio/SkinStudio.exe')
     z.writestr('SkinStudio/README.txt', readme.replace('\n', '\r\n').encode('utf-8-sig'))
+    z.write(os.path.join(HERE, 'THIRD-PARTY-NOTICES.txt'), 'SkinStudio/THIRD-PARTY-NOTICES.txt')
 print('zip', zp, os.path.getsize(zp))

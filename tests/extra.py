@@ -116,6 +116,13 @@ with sync_playwright() as p:
     r=pg.evaluate("""()=>{let bad=[];for(let t=0;t<100;t+=3){const st=Object.assign(tplState(t),{figure:'gendermod',hair:'bald',beard:'none'});const px=paint(st);let n=0;
       for(let y=34;y<44;y++)for(let x=17;x<31;x++)if(px[(y*64+x)*4+3])n++;if(n)bad.push(TEMPLATES[t].n+':'+n)}return bad}""")
     res.append(('Female Gender Mod: на груди нет висящих кусков второго слоя (без волос и бороды)',not r,r[:5]))
+    r=pg.evaluate("""async()=>{const of=window.fetch;const ans=v=>window.fetch=async()=>({ok:true,json:async()=>v});
+      const menuHas=t=>{openMenu&&0;return MENUS.help.some(it=>it.l&&it.l.includes(t)&&(!it.show||it.show()))};
+      ans({version:'1.2.0',donate:'https://evil.example/pay'});await siteInfo();const bad=!DONATE&&!menuHas('Поддержать');
+      ans({version:'1.2.0',donate:'https://ko-fi.com/skinstudio'});await siteInfo();const good=DONATE==='https://ko-fi.com/skinstudio'&&menuHas('Поддержать');
+      window.fetch=of;DONATE='';openAbout();const ab=$('#mBody').textContent;closeModal();openStart(false);const st=$('#mBody').textContent;closeModal();
+      return [bad,good,ab.includes('Не официальный продукт Minecraft')&&ab.includes('NOT AN OFFICIAL MINECRAFT'),st.includes('Не официальный продукт Minecraft'),APP_VERSION]}""")
+    res.append(('«О программе» и стартовый экран с пометкой Mojang; «Поддержать» только с проверенной ссылкой',r[:4]==[True,True,True,True],r))
     res.append(('нет ошибок',not errs))
     pg2=b.new_page();e2=[];pg2.on('pageerror',lambda e:e2.append(str(e)))
     pg2.add_init_script("Storage.prototype.setItem=function(){throw new Error('QuotaExceeded')}")
