@@ -902,8 +902,33 @@ function drawAcc(s,P){
 }
 
 /* hair and long beard that hang down onto the body's second layer; drawn last, over clothes */
+/* длинные волосы на спине — по приёмам с текстур волос скиноделов: пряди по 3 px с тёмной линией между ними
+   (у волнистых линия идёт зигзагом), светлая середина пряди в верхней части и неровные концы: у каждой пряди своя длина, последний ряд — один пиксель (кончик). Цвета — из семьи волос,
+   дальше свет кладёт hairPost, как и везде */
+function backHair(J,rows,wavy,hc,seed,full){const dk=shade(hc,.78),hl=shade(hc,1.12),n=.08,R=Math.min(12,rows);
+  // волосы до колен идут через пояс без просветов — кончики у них уже на ногах
+  const lockLen=[0,1,2].map(k=>full?12:Math.max(2,Math.min(12,R-(hash(k*5+seed,R)*2.4|0))));
+  for(let y=0;y<12;y++){const o=wavy&&y>=1?[0,0,1,1,0,0,-1,-1][(y+seed)&7]:0;
+    for(let x=0;x<8;x++){const lk=Math.min(2,Math.floor(((x+o+9)%9)/3)),len=lockLen[(x+o+9)%9<3?0:lk];
+      if(y>=len)continue;const pos=((x+o)%3+3)%3;                                  // 0,1,2 — место внутри пряди
+      if(y===len-1&&pos!==1&&!full)continue;                                         // кончик пряди — 1 px
+      const c=pos===2&&y>=1?dk:(pos===1&&y>=1&&y<len*.7?hl:hc);Bk(J,x,y,c,n)}}}
+function frontStrands(J,rows,hc,seed){const n=.08,dk=shade(hc,.78);
+  for(const [x0,x1] of [[0,1],[7,6]])for(let y=0;y<rows;y++){const tip=y===rows-1;Fr(J,x0,y,1,1,hc,n);
+    if(!tip&&y<rows-2&&(y+seed+x0)%4!==3)Fr(J,x1,y,1,1,y%3===1?dk:hc,n)}}
 function drawHairBack(s,P){
   const hc=rgb(s.hairColor),J=P.jacket,O=P.hat,n=.1,dkh=shade(hc,.78),tie=[220,60,80];
+  {const R={long:6,longbangs:6,bangslong:6,wavy:7,verylong:11,wavywaist:11,knee:12,kneebangs:12}[s.hair];
+    if(R&&s.top!=='hoodie_up'){const wavy=s.hair==='wavy'||s.hair==='wavywaist',seed=s.hair.length;
+      const fr={verylong:7,wavywaist:7,knee:10,kneebangs:10}[s.hair]||4;
+      if(s.beard==='long'){Fr(J,2,0,4,4,hc,.1);Fr(J,3,4,2,1,hc,.1)}
+      frontStrands(J,fr,hc,seed);backHair(J,R,wavy,hc,seed,s.hair==='knee'||s.hair==='kneebangs');
+      const sh=Math.min(10,R-2);sideR(J,0,0,2,sh,hc,n);sideL(J,2,0,2,sh,hc,n);
+      for(let y=1;y<sh;y++)if((y+seed)%4===3){sideR(J,0,y,1,1,dkh,0);sideL(J,3,y,1,1,dkh,0)}
+      if(s.hair==='knee'||s.hair==='kneebangs')for(const L of [P.rpants,P.lpants]){const W=4,o=L===P.rpants?0:1;
+        for(let y=0;y<7;y++)for(let x=0;x<W;x++){const len=6+((x+o)%2);if(y>=len||(y===len-1&&(x+o)%2===0))continue;Bk(L,x,y,(x+o)%3===2?dkh:hc,.08)}
+        sideR(P.rpants,0,0,2,4,hc,n);sideL(P.lpants,2,0,2,4,hc,n)}
+      return}}
   if(s.beard==='long'){Fr(J,2,0,4,4,hc,.1);Fr(J,3,4,2,1,hc,.1)}
   if(s.top==='hoodie_up')return;
   const shoulders=r=>{sideR(J,0,0,2,r,hc,n);sideL(J,2,0,2,r,hc,n)};
@@ -915,7 +940,9 @@ function drawHairBack(s,P){
     case 'verylong':Bkr(J,0,0,8,10,hc,n);Bkr(J,1,10,6,1,hc,n);for(let x=1;x<8;x+=3)Bkr(J,x,0,1,10,dkh,.06);shoulders(8);break;
     case 'longside':Bkr(J,1,0,6,4,hc,n);Fr(J,0,0,2,6,hc,n);Fr(J,0,6,1,1,hc,n);sideR(J,0,0,4,6,hc,n);T(J,0,3,hc,n);T(J,1,3,hc,n);break;
     case 'highpony':Bkr(J,3,0,2,8,hc,n);Bk(J,3,8,dkh,n);break;
-    case 'twobraids':for(let y=0;y<6;y++){F(J,0,y,y%2?hc:dkh,.06);F(J,7,y,y%2?hc:dkh,.06)}F(J,0,6,tie,0);F(J,7,6,tie,0);break;
+    case 'twobraids':{const hl=shade(hc,1.12),wv=[[hl,hc],[hc,dkh],[dkh,hl]];   // плетение: звенья по 3 ряда, светлая сторона переходит слева направо
+      for(let y=0;y<8;y++){const r=wv[y%3];F(J,0,y,r[0],.04);F(J,1,y,r[1],.04);F(J,7,y,r[0],.04);F(J,6,y,r[1],.04)}
+      F(J,0,8,tie,0);F(J,1,8,tie,0);F(J,6,8,tie,0);F(J,7,8,tie,0);F(J,0,9,hc,.04);F(J,7,9,hc,.04);F(J,1,10,dkh,.04);F(J,6,10,dkh,.04);break}
     case 'wavywaist':Bkr(J,0,0,8,10,hc,n);for(let x=0;x<8;x+=2)Bk(J,x,10,hc,n);for(let y=0;y<10;y++)for(let x=0;x<8;x++){const t=WAVE(x,y+3);if(t)Bk(J,x,y,t>0?shade(hc,1.12):dkh,0)}shoulders(7);break;
     case 'knee':case 'kneebangs':{Bkr(J,0,0,8,12,hc,n);for(let x=1;x<8;x+=3)Bkr(J,x,0,1,12,dkh,.06);shoulders(11);
       // волосы продолжаются по спине ног (при ходьбе они двигаются вместе с ногами — так у всех таких скинов)
@@ -923,7 +950,8 @@ function drawHairBack(s,P){
       sideR(P.rpants,0,0,2,4,hc,n);sideL(P.lpants,2,0,2,4,hc,n);break}
     case 'longpony':Bkr(O,3,2,2,6,hc,n);Bk(O,3,4,tie,0);Bk(O,4,4,tie,0);Bkr(J,3,0,2,10,hc,n);Bk(J,3,10,dkh,n);Bk(J,4,10,dkh,n);Bkr(J,4,0,1,10,dkh,.06);break;
     case 'ponytail':Bkr(O,3,2,2,6,hc,n);Bk(O,3,4,tie,0);Bk(O,4,4,tie,0);Bkr(J,3,0,2,6,hc,n);break;
-    case 'braid':for(let y=0;y<8;y++){Bk(J,3,y,y%2?hc:dkh,.06);Bk(J,4,y,y%2?dkh:hc,.06)}Bk(J,3,8,tie,0);Bk(J,4,8,tie,0);break;
+    case 'braid':{const hl=shade(hc,1.12),wv=[[hl,hc,dkh],[hc,dkh,hl],[dkh,hl,hc]];for(let y=0;y<9;y++){const r=wv[y%3];Bk(J,3,y,r[0],.04);Bk(J,4,y,r[1],.04);if(y<8)Bk(J,y%2?2:5,y,r[2],.04)}
+      Bk(J,3,9,tie,0);Bk(J,4,9,tie,0);Bk(J,3,10,hc,.04);Bk(J,4,10,dkh,.04);Bk(J,4,11,hc,.04);break}
     case 'twintails':Bkr(J,0,0,1,4,hc,n);Bkr(J,7,0,1,4,hc,n);break;
     case 'dreads':for(let x=0;x<8;x++)Bkr(J,x,0,1,x%2?3:4,x%2?hc:dkh,.08);break;
   }
@@ -2121,7 +2149,7 @@ async function natSaveUI(fn,blob,okMsg){// true/false, как и обычное 
     toastAction(okMsg,'Показать в папке',()=>natShow(p));return true}
   catch(e){toast('Не получилось сохранить файл: '+((e&&e.message)||'нет доступа к папке'));return false}}
 /* обновления программы: на сайте лежит version.json с номером свежей версии. Скачивание — только со страницы релизов этого проекта */
-const APP_VERSION='1.2.1';// единственное место с номером версии: отсюда же его берёт сборка программы
+const APP_VERSION='1.3.0';// единственное место с номером версии: отсюда же его берёт сборка программы
 const UPD_URL='https://enotsbeye.github.io/skin-studio/version.json',REL_OK=/^https:\/\/github\.com\/Enotsbeye\/skin-studio\//;
 // ссылка «Поддержать» берётся с сайта (version.json → donate) — её можно поменять без выпуска новой версии; только известные сервисы
 const DONATE_OK=/^https:\/\/(ko-fi\.com|boosty\.to|www\.buymeacoffee\.com|buymeacoffee\.com|paypal\.me|www\.paypal\.me|github\.com\/sponsors|patreon\.com|www\.patreon\.com)\//;
