@@ -234,6 +234,10 @@ body:not([data-mode=paint]) .paintonly{display:none!important}
 .rtabs{display:flex;gap:0;background:var(--panel);border-bottom:1px solid var(--line2)}.rtabs[hidden]{display:none}
 .rtabs button{flex:1;background:none;border:0;border-bottom:2px solid transparent;color:#8c93a1;font:inherit;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:7px 4px;cursor:pointer}
 .rtabs button[aria-selected=true]{color:#e6e9ef;border-bottom-color:#3e90ff}
+.modal.dock{background:transparent;align-items:flex-end;justify-content:flex-end;pointer-events:none}.modal.dock .dlg{pointer-events:auto;margin:0 300px 76px 0;box-shadow:0 10px 40px #000a}
+@media (max-width:900px){.modal.dock .dlg{margin:0 8px 72px;max-width:calc(100vw - 16px)}}
+.adjrow{align-items:center;gap:8px;margin-top:10px;flex-wrap:nowrap}.adjrow input{flex:1;min-width:0;width:auto}.adjrow .tlabel{width:96px;flex:none}.adjrow .edinfo{width:34px;flex:none;text-align:right}
+@media (max-width:520px){.adjrow .tlabel{width:92px;font-size:11px}}
 .tplf{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
 .tplgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px}
 .tplc{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px 6px;background:#24272e;border:1px solid #30343d;border-radius:6px;color:#c9ced8;font:inherit;font-size:11.5px;cursor:pointer;min-width:0}
@@ -349,7 +353,7 @@ body:not([data-mode=paint]) .paintonly{display:none!important}
       </section>
     </section>
     <aside class="side right">
-      <section class="pnl" id="pnlPal"><div class="ph">Палитра<span class="phb"><button type="button" id="palDef">Обычная</button><button type="button" id="palSkin">Из скина</button></span></div><div class="pb" id="paletteBody"></div></section>
+      <section class="pnl" id="pnlPal"><div class="ph">Палитра<span class="phb"><button type="button" id="palDef">Обычная</button><button type="button" id="palSkin">Из скина</button><button type="button" id="palRef" hidden>Из образца</button></span></div><div class="pb" id="paletteBody"></div></section>
       <section class="pnl" id="pnlColor"><div class="ph">Цвет</div><div class="pb" id="colorBody"></div></section>
       <div class="rtabs" id="rtabs" role="tablist" aria-label="Панели"></div>
       <section class="pnl adv paintonly rt" data-rt="layers" id="pnlLayers"><div class="ph">Слои<span class="phb"><button type="button" id="lyAdd" title="Новый слой">+ Слой</button></span></div><div class="pb" id="layersBody"></div></section>
@@ -1443,8 +1447,16 @@ function renderRef(){const b=$('#refBody');if(!b)return;b.innerHTML='';$('#refCl
   b.appendChild(refCv);refCv.oncontextmenu=e=>e.preventDefault();
   refCv.onpointerdown=e=>{const r=refCv.getBoundingClientRect(),x=Math.floor((e.clientX-r.left)/r.width*refCv.width),y=Math.floor((e.clientY-r.top)/r.height*refCv.height);
     const d=refCv.getContext('2d').getImageData(x,y,1,1).data;if(!d[3])return;const h=toHex([d[0],d[1],d[2]]);if(e.button===2){paintColor2=h;updColorUI()}else setPaint(h);toast('Цвет с образца: '+h)}}
-function loadRef(file){const rd=new FileReader();rd.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,800/Math.max(im.width,im.height)),c=document.createElement('canvas');
-  c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));const x=c.getContext('2d');x.imageSmoothingEnabled=im.width>c.width;x.drawImage(im,0,0,c.width,c.height);refCv=c;renderRef()};im.onerror=()=>toast('Не удалось открыть картинку');im.src=rd.result};rd.readAsDataURL(file)}
+let refPalCache=null;
+function refPal(){if(refPalCache&&refPalCache.cv===refCv)return refPalCache.list;const x=refCv.getContext('2d'),d=x.getImageData(0,0,refCv.width,refCv.height).data,cnt=new Map();
+  const step=Math.max(1,Math.floor(Math.sqrt(refCv.width*refCv.height/40000)));
+  for(let y=0;y<refCv.height;y+=step)for(let xx=0;xx<refCv.width;xx+=step){const j=(y*refCv.width+xx)*4;if(d[j+3]<200)continue;const k=(d[j]>>3)<<10|(d[j+1]>>3)<<5|(d[j+2]>>3);const e=cnt.get(k);if(e){e.n++;e.r+=d[j];e.g+=d[j+1];e.b+=d[j+2]}else cnt.set(k,{n:1,r:d[j],g:d[j+1],b:d[j+2]})}
+  const cand=[...cnt.values()].sort((a,b)=>b.n-a.n).map(e=>({c:[e.r/e.n|0,e.g/e.n|0,e.b/e.n|0],n:e.n})),out=[];
+  for(const e of cand){if(out.length>=48)break;if(out.some(o=>Math.hypot(o.c[0]-e.c[0],o.c[1]-e.c[1],o.c[2]-e.c[2])<26))continue;out.push(e)}
+  const list=out.map(o=>o.c).sort((a,b)=>{const ha=rgb2hsl(...a),hb=rgb2hsl(...b),ga=ha[1]<.12?-1:Math.round(ha[0]/30),gb=hb[1]<.12?-1:Math.round(hb[0]/30);return ga-gb||ha[2]-hb[2]}).map(toHex);
+  refPalCache={cv:refCv,list};return list}
+function loadRef(file,quiet){const rd=new FileReader();rd.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,800/Math.max(im.width,im.height)),c=document.createElement('canvas');
+  c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));const x=c.getContext('2d');x.imageSmoothingEnabled=im.width>c.width;x.drawImage(im,0,0,c.width,c.height);refCv=c;renderRef();palMode='ref';renderPalette();if(!quiet)toast('Образец загружен · его цвета — в палитре «Из образца»')};im.onerror=()=>toast('Не удалось открыть картинку');im.src=rd.result};rd.readAsDataURL(file)}
 function applyVisibility(){document.querySelectorAll('#model .box[data-key]').forEach(b=>{b.style.display=hiddenParts.has(b.dataset.key)?'none':''})}
 function eyeBtn(keys,label){const off=keys.every(k=>hiddenParts.has(k)),b=el('button','eye'+(off?' offv':''));b.type='button';b.innerHTML=ico(off?'eyeoff':'eye',15);
   b.title=(off?'Показать: ':'Скрыть: ')+label;b.setAttribute('aria-label',b.title);
@@ -1472,9 +1484,9 @@ function getDefPal(){if(defPal)return defPal;const out=[];for(let i=0;i<16;i++){
 function skinPal(){const cnt=new Map();regions().forEach(({r})=>{for(let j=0;j<r[3];j++)for(let i=0;i<r[2];i++){const k=((r[1]+j)*64+r[0]+i)*4;if(lastFinal[k+3]<128)continue;const h=toHex([lastFinal[k],lastFinal[k+1],lastFinal[k+2]]);cnt.set(h,(cnt.get(h)||0)+1)}});
   return [...cnt.entries()].sort((a,b)=>b[1]-a[1]).slice(0,96).map(e=>e[0])}
 function renderPalette(){
-  const box=$('#paletteBody');box.innerHTML='';const g=el('div','pal'),list=palMode==='skin'?skinPal():getDefPal();
+  if(palMode==='ref'&&!refCv)palMode='def';const box=$('#paletteBody');box.innerHTML='';const g=el('div','pal'),list=palMode==='skin'?skinPal():palMode==='ref'?refPal():getDefPal();
   list.forEach(c=>{const b=el('button',c===paintColor?'on':'');b.type='button';b.style.background=c;b.title=c;b.setAttribute('aria-label','Цвет '+c);b.onclick=()=>setPaint(c);g.appendChild(b)});box.appendChild(g);
-  $('#palDef').setAttribute('aria-pressed',palMode==='def');$('#palSkin').setAttribute('aria-pressed',palMode==='skin');
+  $('#palDef').setAttribute('aria-pressed',palMode==='def');$('#palSkin').setAttribute('aria-pressed',palMode==='skin');$('#palRef').setAttribute('aria-pressed',palMode==='ref');$('#palRef').hidden=!refCv;
   
 }
 
@@ -1549,7 +1561,7 @@ function renderPaint(body){
   g1.append(ob('Сделать объёмным','Одежда переносится на второй слой и выпирает, как волосы',opVolume),ob('Добавить тени','Края, бока и низ частей становятся темнее',opShade));
   g2.append(ob('Пр. рука → лев.','Скопировать правую руку на левую зеркально',()=>opMirrorPart('rarm')),ob('Лев. рука → пр.','Скопировать левую руку на правую зеркально',()=>opMirrorPart('larm')),
     ob('Пр. нога → лев.','Скопировать правую ногу на левую зеркально',()=>opMirrorPart('rleg')),ob('Лев. нога → пр.','Скопировать левую ногу на правую зеркально',()=>opMirrorPart('lleg')));
-  g3.append(ob('Симметрия головы','Левая половина головы на экране копируется на правую',()=>opSymmetry('head')),ob('Симметрия тела','Левая половина тела на экране копируется на правую',()=>opSymmetry('body')));
+  g3.append(ob('Цвет и яркость…','Сдвинуть оттенок, насыщенность и яркость всего скина или одной части',openAdjust),ob('Симметрия головы','Левая половина головы на экране копируется на правую',()=>opSymmetry('head')),ob('Симметрия тела','Левая половина тела на экране копируется на правую',()=>opSymmetry('body')));
   os.append(g1,g2,g3);body.appendChild(os);
   drawEditor();updEdInfo();
 }
@@ -1559,15 +1571,15 @@ function card(label,on,th,onClick,cls){const b=el('button','opt'+(on?' on':'')+(
 function val(v){return typeof v==='function'?v(state):v}
 function renderSec(sec){
   if(sec.o){const d=secEl(val(sec.l),val(sec.note)),g=el('div','grid'+(sec.k==='bodyFB'?' wide':''));
-    OPT[sec.opts||sec.o].forEach(([v,lab])=>g.appendChild(card(lab,state[sec.o]===v,thumb(Object.assign({},state,{[sec.o]:v}),sec.k),()=>set(sec.o,v))));d.appendChild(g);return d}
+    OPT[sec.opts||sec.o].forEach(([v,lab])=>g.appendChild(hoverPreview(card(lab,state[sec.o]===v,thumb(Object.assign({},state,{[sec.o]:v}),sec.k),()=>set(sec.o,v)),()=>Object.assign({},state,{[sec.o]:v}),'Примерка: '+lab)));d.appendChild(g);return d}
   if(sec.m){const d=secEl(val(sec.l)),g=el('div','grid wide');
-    OPT.acc.forEach(([v,lab,kind])=>{const on=state.acc.includes(v);g.appendChild(card(lab,on,thumb(Object.assign({},state,{acc:on?state.acc:withAcc(v)}),kind),()=>set('acc',on?state.acc.filter(a=>a!==v):withAcc(v))))});d.appendChild(g);return d}
+    OPT.acc.forEach(([v,lab,kind])=>{const on=state.acc.includes(v);g.appendChild(hoverPreview(card(lab,on,thumb(Object.assign({},state,{acc:on?state.acc:withAcc(v)}),kind),()=>set('acc',on?state.acc.filter(a=>a!==v):withAcc(v))),()=>Object.assign({},state,{acc:on?state.acc.filter(a=>a!==v):withAcc(v)}),(on?'Без: ':'Примерка: ')+lab))});d.appendChild(g);return d}
   if(sec.r){const key=sec.r,d=secEl(val(sec.l),val(sec.note)),row=el('div','row'),inp=el('input'),out=el('span','edinfo');
     inp.type='range';inp.id='r-'+key;inp.min=sec.min;inp.max=sec.max;inp.step=sec.step;inp.value=state[key]??1;inp.style.flex='1';out.textContent=Math.round((state[key]??1)*100)+'%';
     inp.oninput=()=>{set(key,+inp.value,true);out.textContent=Math.round(inp.value*100)+'%'};inp.onchange=()=>renderPanel();
     row.style.alignItems='center';row.append(inp,out);d.appendChild(row);return d}
   if(sec.c){const key=sec.c,d=secEl(val(sec.l),val(sec.note)),w=el('div','swatches');
-    PAL[sec.pal].forEach(col=>{const b=el('button','sw'+(state[key].toLowerCase()===col?' on':''));b.type='button';b.style.background=col;b.setAttribute('aria-label','Цвет '+col);b.title=col;b.onclick=()=>set(key,col);w.appendChild(b)});
+    PAL[sec.pal].forEach(col=>{const b=el('button','sw'+(state[key].toLowerCase()===col?' on':''));b.type='button';b.style.background=col;b.setAttribute('aria-label','Цвет '+col);b.title=col;b.onclick=()=>set(key,col);w.appendChild(hoverPreview(b,()=>Object.assign({},state,{[key]:col}),'Примерка цвета '+col))});
     const lab=el('label','custom'),inp=el('input');inp.type='color';inp.id='c-'+key;inp.value=state[key];
     inp.oninput=()=>{set(key,inp.value,true);w.querySelectorAll('.sw').forEach(s=>s.classList.remove('on'));const hx=document.getElementById('h-'+key);if(hx)hx.value=inp.value.toUpperCase()};inp.onchange=()=>renderPanel();
     lab.title='Свой цвет';lab.append(inp,document.createTextNode('+'));w.appendChild(lab);
@@ -1740,7 +1752,7 @@ function skinLikeness(d,legacy){const R=[[8,8,8,8],[8,0,8,8],[20,20,8,12],[4,20,
   const U=[[0,0,8,8],[24,0,8,8],[56,0,8,8],[0,16,4,4],[12,16,8,4],[36,16,8,4],[52,16,4,4],[56,16,8,16]];let uo=0,un=0;
   for(const [x0,y0,w,h] of U)for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++){un++;if(d[(y*64+x)*4+3]>200)uo++}
   return {need:on/n,unused:uo/un,ok:on/n>=.85&&(legacy||uo/un<=.9)}}
-function notSkin(file,why){loadRef(file);if(modeOf(cur)!=='paint')goMode('paint');if(!uiSimple)rtabUser='ref';applyRTabs();
+function notSkin(file,why){loadRef(file,true);if(modeOf(cur)!=='paint')goMode('paint');if(!uiSimple)rtabUser='ref';applyRTabs();
   toastAction(why+' — положил в «Образец» справа, срисовывай с неё.','Всё равно открыть как скин',()=>importPNG(file,true))}
 function importPNG(file,force){
   const r=new FileReader();r.onload=()=>{const img=new Image();
@@ -1827,9 +1839,14 @@ function tplThumb(i){if(TPL_THUMB[i])return TPL_THUMB[i];const st=tplState(i),c=
   return TPL_THUMB[i]=renderPNG(128,null,{src:c,st,yaw:-24,pitch:-6,R:{head:[0,8,0],body:[0,0,0],rarm:[0,0,4],larm:[0,0,-4],rleg:[0,0,0],lleg:[0,0,0],off:0}}).toDataURL()}
 /* примерка: навёл на шаблон — модель сразу в нём; увёл курсор — вернулся свой персонаж. Ничего не сохраняется, пока не кликнешь */
 let tplPrev=-1,tplPrevT=0;
-function previewTemplate(i){if(tplPrev===i)return;const st=tplState(i);if(st.model!==builtModel||st.figure!==builtFigure){const keep=state;state=st;try{buildModel()}finally{state=keep}}
-  const c=document.createElement('canvas');c.width=c.height=64;c.getContext('2d').putImageData(new ImageData(paint(st),64,64),0,0);
-  $('#model').style.setProperty('--skin',`url("${c.toDataURL('image/png')}")`);tplPrev=i;const t=$('#tryTag');if(t){t.textContent='Примерка: '+TEMPLATES[i].n;t.hidden=false}}
+function previewState(st,id,label,withEdits){if(tplPrev===id)return;if(st.model!==builtModel||st.figure!==builtFigure){const keep=state;state=st;try{buildModel()}finally{state=keep}}
+  const c=document.createElement('canvas');c.width=c.height=64;const px=withEdits?compositeLayers(paint(st)):paint(st);c.getContext('2d').putImageData(new ImageData(px,64,64),0,0);
+  $('#model').style.setProperty('--skin',`url("${c.toDataURL('image/png')}")`);tplPrev=id;const t=$('#tryTag');if(t){t.textContent=label;t.hidden=false}}
+function previewTemplate(i){previewState(tplState(i),i,'Примерка: '+TEMPLATES[i].n,false)}
+/* примерка вариантов в конструкторе: навёл на карточку — видно на модели, клик — оставить */
+let optSeq=1000;
+function hoverPreview(b,mk,label){const id=optSeq++;b.onpointerenter=e=>{if(e.pointerType!=='mouse')return;clearTimeout(tplPrevT);tplPrevT=setTimeout(()=>previewState(mk(),id,label,true),140)};
+  b.onpointerleave=()=>{clearTimeout(tplPrevT);tplPrevT=setTimeout(endPreview,90)};return b}
 function endPreview(){if(tplPrev<0)return;tplPrev=-1;if(state.model!==builtModel||state.figure!==builtFigure)buildModel();$('#model').style.setProperty('--skin',`url("${skinURL}")`);const t=$('#tryTag');if(t)t.hidden=true}
 function applyTemplate(i){endPreview();const had=editCount()>0;pushHist('');const s=tplState(i);s.edits=null;state=s;loadE();update(true);
   if(had)toastAction('Шаблон «'+TEMPLATES[i].n+'» поставлен. Твои ручные правки убраны.','Вернуть',()=>undo());
@@ -1880,12 +1897,33 @@ function openStart(first){try{localStorage.setItem('mcskin.started','1')}catch(e
   opt('Чистая основа · Алекс','рисовать с нуля, руки 3 px','▯',()=>baseSkin('slim'));
   opt('Открыть PNG','свой или чужой скин','⇪',()=>$('#globalFile').click());
   b.appendChild(g);if(!first){const c=el('button','btn','Продолжить текущий');c.type='button';c.style.marginTop='10px';c.onclick=closeModal;b.appendChild(c)}}
-function fillHoles(){const h=baseHoles();if(!h.length){toast('Дыр в основном слое нет');return}pushHist('');const sk=rgb(state.skin);h.forEach(([x,y])=>setPx(x,y,sk,255));syncE();update(true);toast(`Закрашено пикселей: ${h.length}`)}
+function fillHoles(){const h=baseHoles();if(!h.length){toast('Дыр в основном слое нет');return}pushHist('');const sk=rgb(state.skin);
+  // закрашиваем цветом соседей из той же части (несколько проходов от краёв дыры внутрь), иначе — цветом кожи
+  let left=h.map(([x,y])=>[x,y]);const same=(x,y,a,b)=>{const r1=regionAt(x,y),r2=regionAt(a,b);return r1&&r2&&r1.k===r2.k&&!r2.ov};
+  for(let pass=0;pass<12&&left.length;pass++){const next=[],done=[];
+    for(const [x,y] of left){let n=0,c=[0,0,0];for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const a=x+dx,b=y+dy;if(a<0||b<0||a>63||b>63||!same(x,y,a,b))continue;const p=curPx(a,b);if(p[3]===255){n++;c[0]+=p[0];c[1]+=p[1];c[2]+=p[2]}}
+      if(n)done.push([x,y,c.map(v=>Math.round(v/n))]);else next.push([x,y])}
+    done.forEach(([x,y,c])=>setPx(x,y,c,255));left=next}
+  left.forEach(([x,y])=>setPx(x,y,sk,255));syncE();update(true);toast(`Закрашено пикселей: ${h.length}`)}
+/* цвет и яркость: сдвиг тона, насыщенности, яркости всего скина или одной части — результат на отдельном слое «Цвет» */
+function openAdjust(){if(modeOf(cur)!=='paint')goMode('paint');pushHist('');const base=compositeLayers(paint(state));
+  L.push({n:'Цвет',v:true,o:1,E:emptyE()});AL=L.length-1;E=L[AL].E;let part='all',dh=0,ds=0,dl=0;
+  const PARTS=[['all','Весь скин'],['head','Голова'],['body','Тело'],['arms','Руки'],['legs','Ноги']],inPart=k=>part==='all'||(part==='head'?['head','hat']:part==='body'?['body','jacket']:part==='arms'?['rarm','rsleeve','larm','lsleeve']:['rleg','rpants','lleg','lpants']).includes(k);
+  const apply=()=>{const e=L[AL].E;e.m.fill(0);for(let i=0;i<4096;i++){const j=i*4;if(!base[j+3])continue;const rg=regionAt(i%64,i>>6);if(!rg||!inPart(rg.k))continue;
+      let [h,sa,l]=rgb2hsl(base[j],base[j+1],base[j+2]);h+=dh;sa=Math.max(0,Math.min(1,sa*(1+ds/100)));l=Math.max(0,Math.min(1,l+dl/100*.5));const c=hsl2rgb(h,sa,l);
+      e.px[j]=c[0];e.px[j+1]=c[1];e.px[j+2]=c[2];e.px[j+3]=base[j+3];e.m[i]=1}refreshSkin()};
+  openModal('Цвет и яркость','');$('#modal').classList.add('dock');const b=$('#mBody');const pr=el('div','tools');PARTS.forEach(([v,l])=>{const x=el('button','chip',l);x.type='button';x.setAttribute('aria-pressed',part===v);x.onclick=()=>{part=v;pr.querySelectorAll('button').forEach(y=>y.setAttribute('aria-pressed',y===x));apply()};pr.appendChild(x)});b.appendChild(pr);
+  const sl=(lab,min,max,get,setv)=>{const row=el('div','row adjrow'),rg=el('input'),val=el('span','edinfo','0');rg.type='range';rg.min=min;rg.max=max;rg.value=0;rg.setAttribute('aria-label',lab);
+    rg.oninput=()=>{setv(+rg.value);val.textContent=(+rg.value>0?'+':'')+rg.value;apply()};row.append(el('span','tlabel',lab),rg,val);b.appendChild(row)};
+  sl('Оттенок',-180,180,()=>dh,v=>dh=v);sl('Насыщенность',-100,100,()=>ds,v=>ds=v);sl('Яркость',-100,100,()=>dl,v=>dl=v);
+  const btns=el('div','row');btns.style.marginTop='12px';const ok=el('button','btn primary','Применить'),no=el('button','btn','Отмена');ok.type=no.type='button';
+  ok.onclick=()=>{modalOnClose=null;closeModal();if(!layerCount(L[AL].E)){L.splice(AL,1);AL=Math.max(0,AL-1);E=L[AL].E}syncE();update(true);toast('Готово · слой «Цвет» можно скрыть или удалить в «Слоях»')};
+  no.onclick=()=>closeModal();btns.append(ok,no);b.appendChild(btns);modalOnClose=()=>undo();apply()}
 function toggleOv(){const b=$('#ovBtn');const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);$('#model').classList.toggle('flat',!on)}
 let showPlat=true,stageBg='dark';const STAGE_BG={dark:'#0f1012',grey:'#3a3d44',light:'#d9dde4',blue:'#2c5d9e',green:'#00b140'};
 function setStageBg(k){stageBg=k;$('#stage').style.background=STAGE_BG[k]}function togglePlat(){showPlat=!showPlat;$('#model').classList.toggle('noplat',!showPlat)}
 const TOUR=[['#modes','Режимы','Конструктор — собрать персонажа из готовых деталей. Рисование — дорисовать по пикселям. Экспорт — скачать скин, сохранить в облако и сделать картинку.'],
-  ['.side.left','Левая панель','Начни с «Шаблонов»: 100 готовых людей, нажми любого. Потом меняй детали в разделах: тело, лицо, волосы, одежда, аксессуары. В рисовании — развёртка скина 64×64, файлы и операции со скином.'],
+  ['.side.left','Левая панель','Начни с «Шаблонов»: 100 готовых людей. Наведи курсор — персонаж примерит, нажми — оставишь. Так же работают все варианты в разделах: тело, лицо, волосы, одежда, аксессуары. В рисовании — развёртка скина 64×64, файлы и операции со скином.'],
   ['#toolbar','Панель инструментов','Отменить и повторить, случайный персонаж, подбор цветов. В рисовании — кисть, заливка, ластик, пипетка, тени, перекраска и выделение.'],
   ['#stage','3D-окно','Тяни мышкой — повернуть, колёсико — приблизить, правая кнопка — сдвинуть. Сверху справа — вид, второй слой и позы.'],
   ['.side.right','Цвет и структура','Палитра и выбор цвета для кисти. Внизу — части тела: кнопкой с глазом можно скрыть часть, чтобы дорисовать то, что под ней.'],
@@ -1901,7 +1939,8 @@ function tourShow(i){tourI=i;let o=document.getElementById('tour');if(!o){o=el('
   const W=innerWidth,H=innerHeight,cw=Math.min(320,W-24);let x=r.left,y=r.bottom+12;if(y+170>H)y=Math.max(12,r.top-182);if(x+cw>W-12)x=W-12-cw;if(x<12)x=12;card.style.cssText=`left:${x}px;top:${y}px;width:${cw}px`;
   o.append(hl,card);nx.focus()}
 function openModal(title,html){$('#mTitle').textContent=title;$('#mBody').innerHTML=html;$('#modal').hidden=false;$('#mClose').focus()}
-function closeModal(){$('#modal').hidden=true}
+let modalOnClose=null;
+function closeModal(){$('#modal').hidden=true;$('#modal').classList.remove('dock');const f=modalOnClose;modalOnClose=null;if(f)f()}
 const KEYS=[['Отменить','Ctrl+Z'],['Показать одну часть (навести курсор)','Q'],['Скин до правок','держать C'],['Повторить','Ctrl+Y'],['Рисовать вторым цветом','Правая кнопка мыши по модели или развёртке'],['Поменять цвета местами','X'],['Оттенок из лестницы','1–7'],['Размер кисти','[ и ]'],['Кисть','B'],['Заливка','G'],['Ластик','E'],['Пипетка','I или Alt + клик'],['Тень','D'],['Блик','L'],['Сетка из двух цветов','T'],['Перекрасить цвет','R'],['Выделение области','S'],['Копировать / вырезать / вставить выделение','Ctrl+C / Ctrl+X / Ctrl+V'],['Стереть выделение','Del'],['Зеркальная кисть','M'],['Прямая линия от прошлой точки','Shift + клик'],['Повернуть персонажа','ЛКМ по фону'],['Приблизить / отдалить','Колёсико (развёртка — Ctrl + колёсико)'],['Сдвинуть вид','ПКМ + тянуть'],['Закрыть меню','Esc']];
 const setTool=t=>()=>{if(modeOf(cur)!=='paint')goMode('paint');tool=t;if(uiSimple&&!SIMPLE_TOOLS.includes(t))setSimple(false);else renderToolbar('paint')};
 const MENUS={
@@ -1909,7 +1948,7 @@ const MENUS={
   edit:[{l:'Отменить',k:'Ctrl+Z',f:undo,dis:()=>!hist.length},{l:'Повторить',k:'Ctrl+Y',f:redo,dis:()=>!future.length},{sep:1},{l:'Сбросить ручные правки',f:resetEdits,dis:()=>!editCount()},{l:'Залить дыры цветом кожи',f:fillHoles}],
   skin:[{l:'Руки: Стив (4 px)',ck:()=>state.model==='classic',f:()=>set('model','classic')},{l:'Руки: Алекс (3 px)',ck:()=>state.model==='slim',f:()=>set('model','slim')},{sep:1},
     {l:'Фигура: мужская',ck:()=>state.figure!=='female',f:()=>set('figure','male')},{l:'Фигура: женская',ck:()=>state.figure==='female',f:()=>set('figure','female')},{l:'Фигура: женская объёмная',ck:()=>state.figure==='female3d',f:()=>set('figure','female3d')},{l:'Фигура: для Female Gender Mod',ck:()=>state.figure==='gendermod',f:()=>set('figure','gendermod')},{sep:1},{l:'Случайный персонаж',f:randomize},{l:'Подобрать цвета одежды',f:harmonize},{l:'Сила теней…',f:()=>go(0)}],
-  paint:[{l:'Кисть',k:'B',ck:()=>tool==='brush',f:setTool('brush')},{l:'Заливка',k:'G',ck:()=>tool==='fill',f:setTool('fill')},{l:'Ластик',k:'E',ck:()=>tool==='eraser',f:setTool('eraser')},{l:'Пипетка',k:'I',ck:()=>tool==='pick',f:setTool('pick')},
+  paint:[{l:'Цвет и яркость…',f:openAdjust},{sep:1},{l:'Кисть',k:'B',ck:()=>tool==='brush',f:setTool('brush')},{l:'Заливка',k:'G',ck:()=>tool==='fill',f:setTool('fill')},{l:'Ластик',k:'E',ck:()=>tool==='eraser',f:setTool('eraser')},{l:'Пипетка',k:'I',ck:()=>tool==='pick',f:setTool('pick')},
     {l:'Тень',k:'D',ck:()=>tool==='dark',f:setTool('dark')},{l:'Блик',k:'L',ck:()=>tool==='light',f:setTool('light')},{sep:1},
     {l:'Зеркальная кисть',k:'M',ck:()=>mirror,f:()=>{mirror=!mirror;renderToolbar(modeOf(cur))}},{l:'Сетка пикселей',ck:()=>pxGrid,f:()=>{pxGrid=!pxGrid;applyPaintMode();renderToolbar(modeOf(cur))}},
     {l:'Рисовать на модели',ck:()=>on3d,f:()=>{on3d=!on3d;applyPaintMode();renderToolbar(modeOf(cur));renderPanelTip()}},{sep:1},
@@ -1935,7 +1974,7 @@ $('#globalFile').onchange=e=>{const f=e.target.files[0];if(f){importPNG(f);if(mo
 $('#newTab').onclick=newSkin;
 $('#mergeFile').onchange=e=>{const f=e.target.files[0];if(f)mergeLoad(f);e.target.value=''};
 $('#projFile').onchange=e=>{const f=e.target.files[0];if(f)openProject(f);e.target.value=''};
-$('#palDef').onclick=()=>{palMode='def';renderPalette()};$('#palSkin').onclick=()=>{palMode='skin';renderPalette()};
+$('#palDef').onclick=()=>{palMode='def';renderPalette()};$('#palRef').onclick=()=>{palMode='ref';renderPalette()};$('#palSkin').onclick=()=>{palMode='skin';renderPalette()};
 $('#showAll').onclick=()=>{hiddenParts.clear();applyVisibility();renderOutliner()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMenu();closeModal();if(tourI>=0)tourShow(-1)}});
 
@@ -2062,7 +2101,7 @@ new ResizeObserver(()=>fit()).observe(stage);
 document.addEventListener('keyup',e=>{if(e.code==='KeyC')showBefore(false)});window.addEventListener('blur',()=>showBefore(false));
 {const bb=$('#beforeBtn');bb.onpointerdown=e=>{e.preventDefault();showBefore(true)};bb.onpointerup=bb.onpointerleave=bb.onpointercancel=()=>showBefore(false)}
 $('#lyAdd').onclick=addLayer;
-$('#refLoad').onclick=()=>$('#refFile').click();$('#refFile').onchange=e=>{const f=e.target.files[0];if(f)loadRef(f);e.target.value=''};$('#refClear').onclick=()=>{refCv=null;renderRef()};renderRef();
+$('#refLoad').onclick=()=>$('#refFile').click();$('#refFile').onchange=e=>{const f=e.target.files[0];if(f)loadRef(f);e.target.value=''};$('#refClear').onclick=()=>{refCv=null;renderRef();renderPalette()};renderRef();
 if(FIRST_RUN)setTimeout(()=>openStart(true),60);applyUi();$('#uiBtn').onclick=()=>{setSimple(!uiSimple);toast(uiSimple?'Простой вид: только главное. Всё остальное — в меню сверху':'Все инструменты включены')};
 loadE();fit();buildModel();update(true);requestAnimationFrame(tick);
 </script>

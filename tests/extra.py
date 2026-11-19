@@ -61,6 +61,20 @@ with sync_playwright() as p:
     pg.mouse.move(bx['x']+40,bx['y']+40);pg.wait_for_timeout(450);on=pg.evaluate("()=>[tplPrev,builtModel,state.model,JSON.parse(localStorage.getItem('mcskin.state.v1')).hair===state.hair]")
     pg.mouse.move(900,500);pg.wait_for_timeout(350);off=pg.evaluate("()=>[tplPrev,builtModel===state.model]")
     res.append(('примерка шаблона при наведении и возврат',on[0]==4 and on[1]!=on[2] and on[3] and off==[-1,True],[on,off]))
+    pg.evaluate("()=>{applyTemplate(56);go(CATS.findIndex(c=>c.id==='hair'))}");pg.wait_for_timeout(2900);bx=pg.locator('.opt').nth(17).bounding_box()
+    pg.mouse.move(bx['x']+30,bx['y']+30);pg.wait_for_timeout(450);on=pg.evaluate("()=>[tplPrev>=1000,state.hair]");pg.mouse.move(1000,500);pg.wait_for_timeout(300)
+    res.append(('примерка причёски при наведении, без изменения персонажа',on==[True,'shaggy'] and pg.evaluate("()=>tplPrev")==-1,on))
+    r=pg.evaluate("""()=>{applyTemplate(12);goMode('paint');const before=Array.from(lastFinal).join(),n0=L.length;openAdjust();
+      const rg=document.querySelectorAll('.adjrow input')[0];rg.value=90;rg.dispatchEvent(new Event('input'));const changed=Array.from(lastFinal).join()!==before;
+      closeModal();const back=Array.from(lastFinal).join()===before&&L.length===n0;
+      openAdjust();const r2=document.querySelectorAll('.adjrow input')[2];r2.value=-30;r2.dispatchEvent(new Event('input'));[...document.querySelectorAll('#mBody .btn')].find(b=>b.textContent==='Применить').click();
+      return [changed,back,L.length===n0+1&&L[L.length-1].n==='Цвет']}""")
+    res.append(('«Цвет и яркость»: живое превью, отмена без следов, применение отдельным слоем',all(r),r))
+    r=pg.evaluate("()=>{resetEdits();for(const [x,y] of [[20,22],[21,22],[22,22]])setPx(x,y,[0,0,0],0);syncE();refreshSkin();const n=baseHoles().length;fillHoles();return [n,baseHoles().length]}")
+    res.append(('заделка дыр цветом соседей',r==[3,0],r))
+    r=pg.evaluate("""()=>{goMode('paint');const c=renderPNG(256,'#88aacc');refCv=c;refPalCache=null;renderRef();palMode='ref';renderPalette();
+      const n=document.querySelectorAll('#paletteBody .pal button').length;document.getElementById('refClear').click();return [n,palMode]}""")
+    res.append(('палитра из образца',r[0]>=8 and r[1]=='def',r))
     res.append(('нет ошибок',not errs))
     pg2=b.new_page();e2=[];pg2.on('pageerror',lambda e:e2.append(str(e)))
     pg2.add_init_script("Storage.prototype.setItem=function(){throw new Error('QuotaExceeded')}")
