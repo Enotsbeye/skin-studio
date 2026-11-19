@@ -54,6 +54,13 @@ with sync_playwright() as p:
     res.append(('объёмные детали: на 2-м слое меньше, чем при «целиком», но не пусто',r['flat']<r['det']<r['full'],r))
     res.append(('объёмные детали без полупрозрачных пикселей',r['semi']==0,r['semi']))
     res.append(('старые сохранения переходят на объёмные детали',r['mig']=='detail' and r['def']=='detail',r))
+    r=pg.evaluate("""()=>{setSimple(true);goMode('paint');resetEdits();setPaint('#ff0000');paintColor2='#0000ff';tool='dither';
+      strokeStart([20,22],{button:0});strokeMove([23,22],true);strokeEnd();const row=[20,21,22,23].map(x=>curPx(x,22).slice(0,3).join());tool='brush';return row}""")
+    res.append(('сетка чередует основной и второй цвет',r==['255,0,0','0,0,255','255,0,0','0,0,255'],r))
+    pg.evaluate("()=>{applyTemplate(60);go(0)}");pg.wait_for_timeout(2900);bx=pg.locator('.tplc').nth(4).bounding_box()
+    pg.mouse.move(bx['x']+40,bx['y']+40);pg.wait_for_timeout(450);on=pg.evaluate("()=>[tplPrev,builtModel,state.model,JSON.parse(localStorage.getItem('mcskin.state.v1')).hair===state.hair]")
+    pg.mouse.move(900,500);pg.wait_for_timeout(350);off=pg.evaluate("()=>[tplPrev,builtModel===state.model]")
+    res.append(('примерка шаблона при наведении и возврат',on[0]==4 and on[1]!=on[2] and on[3] and off==[-1,True],[on,off]))
     res.append(('нет ошибок',not errs))
     pg2=b.new_page();e2=[];pg2.on('pageerror',lambda e:e2.append(str(e)))
     pg2.add_init_script("Storage.prototype.setItem=function(){throw new Error('QuotaExceeded')}")

@@ -43,6 +43,10 @@ JS = r"""async ({steps,seed})=>{
   lyVis:()=>{pushHist('');L[Math.floor(rnd()*L.length)].v^=true;L.forEach(l=>l.v=!!l.v);syncE();update(true)},
   lyOp:()=>{pushHist('');L[AL].o=Math.round(rnd()*10)/10;syncE();update(true)},
   lySel:()=>{AL=Math.floor(rnd()*L.length);E=L[AL].E;syncE();save()},
+  tpl:()=>applyTemplate(Math.floor(rnd()*100)),
+  tryOn:()=>{previewTemplate(Math.floor(rnd()*100))},tryOff:()=>endPreview(),
+  base:()=>baseSkin(rnd()<.5?'classic':'slim'),
+  simple:()=>setSimple(rnd()<.5),
  };
  const names=Object.keys(A);
  for(let s=0;s<steps;s++){const name=pick(names);const before=J(),hb=hist.length;
@@ -54,6 +58,8 @@ JS = r"""async ({steps,seed})=>{
    if(lastFinal.length!==16384)fails.push(s+' '+name+': размер скина');
    if(!editCount()&&baseHoles().length)fails.push(s+' '+name+': дыры в основном слое без ручных правок ('+baseHoles().length+')');
    if(s%7===0&&!renderOK())fails.push(s+' '+name+': картинка скина не совпадает с состоянием');
+   if(tplPrev<0&&(builtModel!==state.model||builtFigure!==state.figure))fails.push(s+' '+name+': модель на экране не та (руки/фигура)');
+   try{const sv=JSON.parse(localStorage.getItem('mcskin.state.v1'));if(sv&&sv.hair!==state.hair)fails.push(s+' '+name+': сохранено не то, что на экране')}catch(e){}
    if(name!=='undo'&&name!=='redo'&&hist.length>hb&&after!==before){undo();if(J()!==before)fails.push(s+' '+name+': отмена вернула не то состояние');redo();if(J()!==after)fails.push(s+' '+name+': повтор вернул не то состояние')}
    log.push(name);if(fails.length>8)break}
  return {fails,steps:log.length,counts:log.reduce((a,n)=>(a[n]=(a[n]||0)+1,a),{})}}"""

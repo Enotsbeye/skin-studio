@@ -92,7 +92,7 @@ button{font-family:inherit}
 #pnlOut .pb{flex:1;overflow:auto;padding:2px 0}
 
 .center{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--bg)}
-.stage{position:relative;flex:1;min-height:0;overflow:hidden;perspective:1800px;background:#0f1012;touch-action:none;cursor:grab;user-select:none}
+.stage{position:relative;flex:1;min-height:0;overflow:hidden;perspective:1800px;background:radial-gradient(ellipse 46% 58% at 50% 46%,#2a2d35 0%,#1a1c21 55%,#0f1012 100%);touch-action:none;cursor:grab;user-select:none}
 .stage.drag{cursor:grabbing}
 .cam{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.2,.8,.2,1)}
 .cam.live{transition:none}
@@ -200,13 +200,15 @@ body:not([data-mode="build"]) .cats{display:none}
 .tools{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 body.dropping .app::after{content:'Отпусти файл, чтобы открыть скин';position:fixed;inset:12px;border:2px dashed #3e90ff;border-radius:8px;background:rgba(10,14,22,.82);color:#cfe0ff;font-size:20px;display:flex;align-items:center;justify-content:center;z-index:999;pointer-events:none}
  body.simple .adv{display:none!important}
-body.simple[data-mode=build] .side.right,body.simple[data-mode=build] .status{display:none}
+body.simple[data-mode=build] .side.right,body.simple[data-mode=build] .status,body.simple[data-mode=export] .side.right,body.simple[data-mode=export] .status{display:none}
+body.simple[data-mode=export] .app{grid-template-rows:30px 30px auto 1fr}
+body.simple[data-mode=export] .work{grid-template-columns:380px minmax(0,1fr)}
 body.simple[data-mode=build] .work{grid-template-columns:380px minmax(0,1fr)}
 body.simple[data-mode=build] .app{grid-template-rows:30px 30px auto 1fr}
 body.simple #pnlColor{flex:1}
 #uiBtn{margin-right:6px}
-@media (max-width:1100px){body.simple[data-mode=build] .work{grid-template-columns:340px minmax(0,1fr)}}
-@media (max-width:900px){body.simple[data-mode=build] .work{grid-template-columns:1fr}body.simple[data-mode=build] .app{grid-template-rows:auto auto auto auto}}
+@media (max-width:1100px){body.simple[data-mode=build] .work,body.simple[data-mode=export] .work{grid-template-columns:340px minmax(0,1fr)}}
+@media (max-width:900px){body.simple[data-mode=build] .work,body.simple[data-mode=export] .work{grid-template-columns:1fr}body.simple[data-mode=build] .app{grid-template-rows:auto auto auto auto}}
 #phint,#pstep,.stage-tip,.note.hide{display:none!important}
 h3 .info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:6px;border-radius:50%;border:1px solid #4a505c;color:#8c93a1;font-size:9.5px;font-weight:600;cursor:help;vertical-align:1px;text-transform:none;letter-spacing:0}
 h3 .info:hover,h3 .info:focus{color:#fff;border-color:#3e90ff;outline:none}
@@ -216,6 +218,7 @@ h3 .info:hover,h3 .info:focus{color:#fff;border-color:#3e90ff;outline:none}
 .startc:hover,.startc:focus-visible{border-color:#3e90ff;background:#2a2f38;outline:none}
 @media (max-width:520px){.start{grid-template-columns:1fr}}
 body:not([data-mode=paint]) .paintonly{display:none!important}
+.trytag{background:#3e90ff!important;color:#fff!important}
 .beforetag{position:absolute;left:12px;top:10px;z-index:5;background:#e8a33d;color:#111;font-weight:700;font-size:12px;padding:3px 8px;border-radius:4px;pointer-events:none}
 #pnlRef .pb{max-height:240px;overflow:auto}#refBody canvas{width:100%;display:block;cursor:crosshair;image-rendering:auto;border-radius:3px}
 #refBody .empty{color:#6c7280;font-size:12px;padding:6px 0}
@@ -330,7 +333,7 @@ body:not([data-mode=paint]) .paintonly{display:none!important}
     </aside>
     <section class="center">
       <section class="stage" id="stage" aria-label="3D-просмотр персонажа">
-        <div class="stage-tip" id="stageTip"></div><div class="beforetag" id="beforeTag" hidden>ДО</div>
+        <div class="stage-tip" id="stageTip"></div><div class="beforetag" id="beforeTag" hidden>ДО</div><div class="beforetag trytag" id="tryTag" hidden></div>
         <div class="cam" id="cam"><div class="model" id="model"></div></div>
         <div class="stage-ui" id="stageUi">
           <span class="zoom adv"><button class="chip" type="button" id="zOut" aria-label="Отдалить">−</button><button class="chip" type="button" id="zVal" title="Сбросить камеру">100%</button><button class="chip" type="button" id="zIn" aria-label="Приблизить">+</button></span>
@@ -644,6 +647,8 @@ function drawFace(s,P){
   }
 }
 
+/* волны: тёмные просветы между прядями идут зигзагом, на гребне волны — светлый пиксель */
+const WAVE=(x,y)=>{const o=[0,0,1,1,0,0,-1,-1][((y%8)+8)%8],m=(((x-o)%3)+3)%3;return m===0?-1:(m===1&&y%4===1)?1:0};
 function drawHair(s,P){
   const H=P.head,O=P.hat,hc=rgb(s.hairColor),sk=rgb(s.skin),n=.1,hl=shade(hc,1.12),dkh=shade(hc,.78);
   const shortBase=()=>{capT(H,hc,n);Fr(H,0,0,8,1,hc,n);F(H,0,1,hc,n);F(H,7,1,hc,n);sidesBack(H,0,3,hc,n);sideR(H,0,3,4,1,hc,n);sideL(H,4,3,4,1,hc,n);Bkr(H,0,3,8,2,hc,n)};
@@ -676,7 +681,7 @@ function drawHair(s,P){
       sidesBack(O,3,7,hc,n);Fr(O,0,3,1,4,hc,n);Fr(O,7,3,1,4,hc,n);Fr(O,0,0,8,1,hl,n);break;
     case 'long':case 'verylong':case 'longside':case 'knee':longBase(false);break;
     case 'longbangs':case 'kneebangs':longBase(true);break;
-    case 'wavywaist':case 'wavy':longBase(false);for(let y=1;y<8;y++)for(let x=0;x<32;x++)if((x<8||x>=16)&&(x+((y>>1)%2))%3===0)S(O,x,y,dkh,0);break;
+    case 'wavywaist':case 'wavy':longBase(false);for(let y=1;y<8;y++)for(let x=0;x<32;x++){if(x>=8&&x<16)continue;const t=WAVE(x,y);if(t)S(O,x,y,t>0?hl:dkh,0)}break;
     case 'twobraids':shortBase();Fr(H,0,1,1,3,hc,n);Fr(H,7,1,1,3,hc,n);for(let y=3;y<8;y++){F(O,0,y,y%2?hc:dkh,.06);F(O,7,y,y%2?hc:dkh,.06)}break;
     case 'highpony':shortBase();for(let x=3;x<5;x++)for(let z=0;z<3;z++)T(O,x,z,hl,n);Bkr(O,3,0,2,8,hc,n);Bk(O,3,1,[220,60,80],0);Bk(O,4,1,[220,60,80],0);break;
     case 'ponytail':case 'longpony':shortBase();break;
@@ -850,7 +855,7 @@ function drawAcc(s,P){
   if(has('gloves'))[P.rarm,P.larm].forEach(a=>{band(a,10,12,ac,.06);capB(a,ac,.06)});
   if(has('catears')){const hc=rgb(s.hairColor),pk=[240,170,190];for(const x of [0,1,6,7])for(let z=3;z<7;z++)T(O,x,z,hc,.08);T(O,1,4,pk,0);T(O,6,4,pk,0);T(O,1,5,pk,0);T(O,6,5,pk,0);
     [0,1,6,7].forEach(x=>F(O,x,0,hc,.08));F(O,1,0,pk,0);F(O,6,0,pk,0)}
-  if(has('horns')){const iv=[232,222,200],tip=[150,140,120];for(const x of [1,6]){T(O,x,5,iv,.04);T(O,x,6,iv,.04);F(O,x,0,iv,.04)}T(O,1,4,tip,0);T(O,6,4,tip,0)}
+  if(has('horns')){const iv=s.accColor&&s.accColor.toLowerCase()!=='#2b2b2e'?rgb(s.accColor):[232,222,200],tip=shade(iv,.6);for(const x of [1,6]){T(O,x,5,iv,.04);T(O,x,6,iv,.04);F(O,x,0,iv,.04)}T(O,1,4,tip,0);T(O,6,4,tip,0)}
   /* tactical set */
   if(has('balaclava')){const c=[28,28,30];capT(O,c,.08);sidesBack(O,0,8,c,.08);Fr(O,0,0,8,8,c,.08);Fclr(O,1,e0,6,e1-e0+1)}
   if(has('gasmask')){const rb=[44,46,44],ln=[62,86,98],st=[30,30,30],top=Math.max(0,e0-1);Fr(O,0,top,8,8-top,rb,.06);
@@ -885,7 +890,7 @@ function drawHairBack(s,P){
     case 'longside':Bkr(J,1,0,6,4,hc,n);Fr(J,0,0,2,6,hc,n);Fr(J,0,6,1,1,hc,n);sideR(J,0,0,4,6,hc,n);T(J,0,3,hc,n);T(J,1,3,hc,n);break;
     case 'highpony':Bkr(J,3,0,2,8,hc,n);Bk(J,3,8,dkh,n);break;
     case 'twobraids':for(let y=0;y<6;y++){F(J,0,y,y%2?hc:dkh,.06);F(J,7,y,y%2?hc:dkh,.06)}F(J,0,6,tie,0);F(J,7,6,tie,0);break;
-    case 'wavywaist':Bkr(J,0,0,8,10,hc,n);for(let x=0;x<8;x+=2)Bk(J,x,10,hc,n);for(let y=1;y<10;y+=2)Bkr(J,0,y,8,1,dkh,.08);shoulders(7);break;
+    case 'wavywaist':Bkr(J,0,0,8,10,hc,n);for(let x=0;x<8;x+=2)Bk(J,x,10,hc,n);for(let y=0;y<10;y++)for(let x=0;x<8;x++){const t=WAVE(x,y+3);if(t)Bk(J,x,y,t>0?shade(hc,1.12):dkh,0)}shoulders(7);break;
     case 'knee':case 'kneebangs':{Bkr(J,0,0,8,12,hc,n);for(let x=1;x<8;x+=3)Bkr(J,x,0,1,12,dkh,.06);shoulders(11);
       // волосы продолжаются по спине ног (при ходьбе они двигаются вместе с ногами — так у всех таких скинов)
       for(const L of [P.rpants,P.lpants]){Bkr(L,0,0,4,6,hc,n);Bkr(L,1,6,2,1,hc,n);Bkr(L,L===P.rpants?2:1,0,1,6,dkh,.06)}
@@ -927,7 +932,8 @@ const HAIR_FRONT={
 const HAIR_PART=['long','verylong','wavy','wavywaist','knee','longbangs','kneebangs','bangslong','bob','curtain','longside','twobraids','twintails','bangs'];
 function hairFront(s,P,snap,M){let pr=HAIR_FRONT[s.hair];if(typeof pr==='string')pr=HAIR_FRONT[pr];if(!pr)return;
   const hc=rgb(s.hairColor),soft=soft0(s),lim=soft?4:eyeRows(s)[0],emo=s.hair==='emo';
-  for(let lx=0;lx<8;lx++){const cap=(lx>0&&lx<7&&!(emo&&lx<3))?lim:8,db=Math.min(pr[0][lx],cap),dov=Math.min(pr[1][lx],cap);
+  const eyeCol=lx=>lx===1||lx===2||lx===5||lx===6;
+  for(let lx=0;lx<8;lx++){const cap=(lx>0&&lx<7&&!(emo&&lx<3))?(soft&&eyeCol(lx)?lim-1:lim):8,db=Math.min(pr[0][lx],cap),dov=Math.min(pr[1][lx],cap);
     for(let ly=0;ly<8;ly++){const ib=(8+ly)*64+8+lx,io=ib+32,jb=ib*4,jo=io*4;
       if(ly<db){if(B[jb]===snap[jb]&&B[jb+1]===snap[jb+1]&&B[jb+2]===snap[jb+2])put(8+lx,8+ly,hc,0)}
       else for(let c=0;c<4;c++)B[jb+c]=snap[jb+c];
@@ -982,6 +988,19 @@ function hairPost(mk,s,M){const hc=rgb(s.hairColor),h2=rgb(s.hairColor2||s.hairC
 const LIFT={2:[0,16],4:[0,16],6:[16,0],8:[0,16],10:[-16,0]};
 /* «объёмные детали»: на второй слой поднимаются только края и детали одежды (подол, воротник, манжеты, пуговицы,
    карманы, ремень, принты, обувь), а на основном слое под ними — тень. Так рисуют популярные 3D-скины */
+/* складки: колени, локти, пояс, подмышки — короткие тёмные «чёрточки» с бликом над ними, как рисуют скиноделы */
+function clothFolds(s,M,tm,bm){if(!SHK)return;const FOLDIX=M.fx||(M.fx=(()=>{const o={};for(let i=0;i<4096;i++){const pi=M.p[i];if(pi>=0)o[pi+','+M.f[i]+','+M.lx[i]+','+M.ly[i]]=i}return o})());const tc=rgb(s.topColor),bc=rgb(s.bottomColor),ff=f=>1-(1-f)*Math.min(1.4,SHK);
+  const plain=(i,base)=>{const j=i*4,k=Math.max(.2,lumA([B[j],B[j+1],B[j+2]])/Math.max(1,lumA(base)));return Math.hypot(B[j]-base[0]*k,B[j+1]-base[1]*k,B[j+2]-base[2]*k)<30};
+  const mark=(mask,base,pi,f,lx,ly,k)=>{const i=FOLDIX[pi+','+f+','+lx+','+ly];if(i===undefined||i<0||!mask[i]||!plain(i,base))return false;hsPx(i*4,ff(k));return true};
+  const long=(mask,pi,f,lx,y)=>{const i=FOLDIX[pi+','+f+','+lx+','+y];return i!==undefined&&i>=0&&mask[i]};
+  for(const [leg,mir] of [[8,0],[10,1]]){if(!long(bm,leg,0,1,8))continue;const a=mir?2:1,b2=mir?1:2;   // колено
+    if(mark(bm,bc,leg,0,a,6,.82))mark(bm,bc,leg,0,a,5,1.08);if(mark(bm,bc,leg,0,b2,5,.86))mark(bm,bc,leg,0,b2,4,1.06);
+    mark(bm,bc,leg,1,1,5,.88);mark(bm,bc,leg,1,2,5,.88);
+    if(long(bm,leg,0,1,11)){mark(bm,bc,leg,0,0,10,.88);mark(bm,bc,leg,0,3,10,.88)}}              // гармошка у щиколотки
+  for(const [arm,mir] of [[4,0],[6,1]]){const w=s.model==='slim'?3:4;if(!long(tm,arm,0,1,7))continue;  // локоть у длинного рукава
+    const a=mir?w-2:1,b2=mir?w-1:0;if(mark(tm,tc,arm,0,a,6,.84))mark(tm,tc,arm,0,a,5,1.07);mark(tm,tc,arm,0,b2,7,.88)}
+  if(long(tm,2,0,3,10)){for(const [x,y] of [[2,9],[5,9]])mark(tm,tc,2,0,x,y,.86);mark(tm,tc,2,0,3,10,.9);mark(tm,tc,2,1,2,9,.88);mark(tm,tc,2,1,5,10,.88)}  // пояс
+  for(const f of [2,3])mark(tm,tc,2,f,f===2?1:2,2,.88)}                                           // подмышки
 function liftDetail(cm,sm,tm,bm,M,s){const out=new Uint8Array(4096),up=new Uint8Array(4096),tc=rgb(s.topColor),bc=rgb(s.bottomColor);
   const inG=i=>i>=0&&i<4096&&(cm[i]||sm[i]),sameFace=(a,b)=>b>=0&&b<4096&&M.p[a]===M.p[b]&&M.f[a]===M.f[b];
   for(let i=0;i<4096;i++){if(!cm[i]&&!sm[i])continue;const pi=M.p[i];if(!LIFT[pi])continue;const f=M.f[i];let go=false;
@@ -1052,9 +1071,10 @@ function paint(s){
   SHK=s.shadeK??1;
   let snap=B.slice();NOISEK=0;drawHair(s,P);hairFront(s,P,snap,M);hairJag(s,snap,M);NOISEK=1;const hm=diffMask(snap);hairPost(hm,s,M);
   snap=B.slice();
-  let sA=B.slice();drawTop(s,P);const tm=diffMask(sA);patternize(tm,s.topPattern,rgb(s.topColor),rgb(s.topColor2),M);
+  NOISEK=.5;let sA=B.slice();drawTop(s,P);const tm=diffMask(sA);patternize(tm,s.topPattern,rgb(s.topColor),rgb(s.topColor2),M);
   sA=B.slice();drawBottom(s,P);const bm=diffMask(sA);patternize(bm,s.bottomPattern,rgb(s.bottomColor),rgb(s.bottomColor2||'#2b2b2e'),M);
-  sA=B.slice();drawTopLegs(s,P);const tm2=diffMask(sA);for(let i=0;i<4096;i++)if(tm2[i]){tm[i]=1;bm[i]=0}patternize(tm2,s.topPattern,rgb(s.topColor),rgb(s.topColor2),M);
+  sA=B.slice();drawTopLegs(s,P);const tm2=diffMask(sA);for(let i=0;i<4096;i++)if(tm2[i]){tm[i]=1;bm[i]=0}patternize(tm2,s.topPattern,rgb(s.topColor),rgb(s.topColor2),M);NOISEK=1;
+  clothFolds(s,M,tm,bm);
   const cm=diffMask(snap);diffShade(snap,i=>clothShade(i,M));
   const s2=B.slice();drawShoes(s,P);const sm=diffMask(s2);
   const c3=s.clothes3d||'detail',lifted=c3==='flat'?null:c3==='3d'?liftClothes(cm,sm,M):liftDetail(cm,sm,tm,bm,M,s);
@@ -1246,9 +1266,9 @@ function applyRot(){
     const d=x1*LIGHT[0]+y2*LIGHT[1]+z2*LIGHT[2];f.el.style.filter=`brightness(${(0.45+0.65*Math.max(0,d)).toFixed(3)})`}
 }
 let uz=1,panX=0,panY=0,liveT=0;
-function applyZoom(){const z=CATS[cur].zoom,k=(z?1.85:1)*uz,fy=(z?12:-1)*SC;
+function applyZoom(){const z=CATS[cur].zoom,k=(z?1.4:1)*uz,fy=(z?9:-1)*SC;
   $('#cam').style.transform=`translate(${panX}px,${panY}px) scale(${k/builtK}) translateY(${fy}px)`;const zv=$('#zVal');if(zv)zv.textContent=Math.round(uz*100)+'%';updStatus();
-  clearTimeout(crispT);crispT=setTimeout(()=>{const z2=CATS[cur].zoom,k2=(z2?1.85:1)*uz;if(Math.abs(k2-builtK)<.01)return;
+  clearTimeout(crispT);crispT=setTimeout(()=>{const z2=CATS[cur].zoom,k2=(z2?1.4:1)*uz;if(Math.abs(k2-builtK)<.01)return;
     const c=$('#cam');c.classList.add('live');builtK=k2;SC=baseSC*builtK;buildModel();refreshSkin();requestAnimationFrame(()=>requestAnimationFrame(()=>c.classList.remove('live')))},650)}
 function liveCam(){const c=$('#cam');c.classList.add('live');clearTimeout(liveT);liveT=setTimeout(()=>c.classList.remove('live'),180)}
 function setZoom(v,live){uz=Math.max(.5,Math.min(5,v));if(live)liveCam();applyZoom()}
@@ -1303,7 +1323,8 @@ function renderPNG(size,bg,O){O=O||{};const dg=Math.PI/180,Mv=M3.mul(M3.rx((O.pi
 let renderBg='none';const RBG={none:null,dark:'#111214',light:'#e9edf2',blue:'#2f80d1'};
 function saveRender(){renderPNG(1024,RBG[renderBg]).toBlob(b=>saveFile(fileName()+'-render.png',b,'Картинка персонажа сохранена: '+fileName()+'-render.png'),'image/png')}
 function setPose(p){pose=p;const s=$('#poseSel');if(s)s.value=p}
-let animT=0;function tick(t){fpsN++;if(t-fpsT>1000){const f=$('#fps');if(f)f.textContent=Math.round(fpsN*1000/(t-fpsT))+' FPS';fpsN=0;fpsT=t}
+let animT=0,lastRT=0;function tick(t){
+  if(t-lastRT>250&&modeOf(cur)==='export'){lastRT=t;const ri=document.getElementById('renderPrev');if(ri)try{ri.src=renderPNG(256,RBG[renderBg]).toDataURL()}catch(e){}}fpsN++;if(t-fpsT>1000){const f=$('#fps');if(f)f.textContent=Math.round(fpsN*1000/(t-fpsT))+' FPS';fpsN=0;fpsT=t}
   if(targetYaw!==null&&!drag){yaw+=(targetYaw-yaw)*(reduce?1:.16);if(Math.abs(targetYaw-yaw)<.2){yaw=targetYaw;targetYaw=null}applyRot()}
   if(!(CATS[cur].id==='paint'&&on3d))animT=t;
   if(pivs.rarm){const R=poseAt(animT);for(const k of ['head','body','rarm','larm','rleg','lleg']){const pv=pivs[k];if(!pv||!pv._p)continue;const [x,y,z]=pv._p,[a,b,c]=R[k];
@@ -1311,12 +1332,12 @@ let animT=0;function tick(t){fpsN++;if(t-fpsT>1000){const f=$('#fps');if(f)f.tex
   requestAnimationFrame(tick);
 }
 let lastFinal=new Uint8ClampedArray(16384);
-function refreshSkin(){
+function refreshSkin(){if(tplPrev>=0)endPreview();
   lastFinal=compositeLayers(paint(state));
   sctx.putImageData(new ImageData(lastFinal,64,64),0,0);drawEditor();skinURL=skinCv.toDataURL('image/png');
   $('#model').style.setProperty('--skin',`url("${skinURL}")`);const ti=$('#texImg');if(ti)ti.src=skinURL;save();
 }
-function update(full){dirty=true;if(state.model!==builtModel||state.figure!==builtFigure)buildModel();refreshSkin();if(full)renderPanel();setUndoState();updStatus()}
+function update(full){if(tplPrev>=0)endPreview();dirty=true;if(state.model!==builtModel||state.figure!==builtFigure)buildModel();refreshSkin();if(full)renderPanel();setUndoState();updStatus()}
 
 /* ================= UI ================= */
 function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
@@ -1338,10 +1359,10 @@ function renderTabs(){
   CATS.forEach((c,i)=>{if(modeOf(i)!=='build')return;const b=el('button','cat'+(i===cur?' on':''),c.t);b.type='button';if(i===cur)b.setAttribute('aria-current','page');b.onclick=()=>go(i);nav.appendChild(b)});
 }
 let beforeURL=null,soloPrev=null;
-function go(i){const pm=modeOf(cur);cur=Math.max(0,Math.min(CATS.length-1,i));if(modeOf(cur)==='paint'&&pm!=='paint')beforeURL=skinURL;if(modeOf(cur)==='build')lastBuild=cur;seen.add(cur);closeMenu();renderPanel();applyZoom()}
+function go(i){if(tplPrev>=0)endPreview();const pm=modeOf(cur);cur=Math.max(0,Math.min(CATS.length-1,i));if(modeOf(cur)==='paint'&&pm!=='paint')beforeURL=skinURL;if(modeOf(cur)==='build')lastBuild=cur;seen.add(cur);closeMenu();renderPanel();applyZoom()}
 
 /* ---------- icons (own line icons) ---------- */
-const ICONS={
+const ICONS={dither:'<path d="M4 4h4v4H4zM12 4h4v4h-4zM8 8h4v4H8zM16 8h4v4h-4zM4 12h4v4H4zM12 12h4v4h-4zM8 16h4v4H8zM16 16h4v4h-4z"/>',noise:'<path d="M5 6h2M11 5h2M17 7h2M7 11h2M14 12h2M4 16h2M10 17h2M18 15h2M13 19h2"/>',
   undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-4"/>',
   redo:'<path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h4"/>',
   brush:'<path d="M14 4l6 6-8 8-6-6z"/><path d="M6 12l-2 6 6-2"/>',
@@ -1386,9 +1407,10 @@ function renderToolbar(mode){
     [['brush','Кисть','B'],['fill','Заливка','G'],['eraser','Ластик','E'],['pick','Пипетка','I'],['dark','Тень','D'],['light','Блик','L']]
       .forEach(([id,l,k])=>t.appendChild(tbtn(id,l,`${l} (${k})`,tool===id,()=>{tool=id;renderToolbar('paint')})));
     t.append(tsep(),el('span','tlabel','Размер'),numIn(brushSize,1,8,'Размер кисти, пикселей',v=>{brushSize=v}),
-      tsep(),tbtn('mirror','Зеркально','Зеркальная кисть (M): рисует сразу на обеих сторонах',mirror,()=>{mirror=!mirror;renderToolbar('paint')}));
+      tsep(),tbtn('mirror','Зеркально','Зеркальная кисть (M): рисует сразу на обеих сторонах',mirror,()=>{mirror=!mirror;renderToolbar('paint')}),
+      tbtn('noise','Шум','Кисть рисует чуть разными оттенками — для текстуры ткани, волос, камня',noise>0,()=>{noise=noise>0?0:18;renderToolbar('paint')}));
   }else if(mode==='paint'){
-    [['brush','Кисть','B'],['fill','Заливка','G'],['eraser','Ластик','E'],['pick','Пипетка','I'],['dark','Тень','D'],['light','Блик','L'],['replace','Перекрасить цвет по всему скину','R'],['select','Выделение области','S']]
+    [['brush','Кисть','B'],['fill','Заливка','G'],['eraser','Ластик','E'],['pick','Пипетка','I'],['dark','Тень','D'],['light','Блик','L'],['dither','Сетка из двух цветов: основной и второй через пиксель','T'],['replace','Перекрасить цвет по всему скину','R'],['select','Выделение области','S']]
       .forEach(([id,l,k])=>t.appendChild(tbtn(id,'',`${l} (${k})`,tool===id,()=>{tool=id;renderToolbar('paint')})));
     if(tool==='select'){t.append(tsep());[['Копировать','Ctrl+C',()=>selCopy(false)],['Вырезать','Ctrl+X',()=>selCopy(true)],['Вставить','Ctrl+V',selPasteMode],['Стереть','Del',selDelete],['Отразить','',selFlip],['Снять','Esc',selClear]]
       .forEach(([l,k,f])=>{const b=tbtn(null,l,l+(k?' ('+k+')':''),null,f);if((l!=='Вставить'&&!sel)||(l==='Вставить'&&!clip))b.disabled=true;t.appendChild(b)})}
@@ -1638,6 +1660,7 @@ function applyPixel(x,y){
   if(!regionAt(x,y))return;
   if(tool==='brush'){const c=rgb(curCol());setPx(x,y,noise?shade(c,1+(Math.random()-.5)*2*noise/100):c,255)}
   else if(tool==='eraser')setPx(x,y,[0,0,0],0);
+  else if(tool==='dither'){const c=rgb(((x+y)&1)?paintColor2:paintColor);setPx(x,y,c,255)}
   else if(tool==='dark'||tool==='light'){const key=y*64+x;if(visited.has(key))return;visited.add(key);const p=curPx(x,y);if(!p[3])return;setPx(x,y,shade(p.slice(0,3),tool==='dark'?.86:1.14),p[3])}
 }
 function line(a,b,fn){let [x0,y0]=a;const [x1,y1]=b,dx=Math.abs(x1-x0),dy=-Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1;let er=dx+dy;
@@ -1754,12 +1777,11 @@ function renderDone(body){
   const tex=el('div','tex'),img=el('img');img.id='texImg';img.alt='Файл скина 64×64';img.src=skinURL;
   img.title='Файл скина 64×64. Если кнопка не сработала — правый клик (на телефоне долгое нажатие) → «Сохранить изображение»';tex.append(img);body.appendChild(tex);
   renderCloud(body);
-  const rs=secEl('Картинка персонажа','Для аватарки или превью: поза и поворот как в 3D-окне. Позу выбери в окне сверху, повернуть — тяни мышкой.'),rw=el('div','tex'),ri=el('img');ri.id='renderPrev';ri.alt='Картинка персонажа';
+  const rs=secEl('Картинка персонажа','Для аватарки или превью: поза и поворот как в 3D-окне — картинка обновляется сама. Позу выбери в окне сверху, повернуть — тяни мышкой.'),rw=el('div','tex'),ri=el('img');ri.id='renderPrev';ri.alt='Картинка персонажа';
   try{ri.src=renderPNG(256,RBG[renderBg]).toDataURL()}catch(e){}const rc=el('div');const bgRow=el('div','tools');
   [['none','Прозрачный'],['dark','Тёмный'],['light','Светлый'],['blue','Синий']].forEach(([v,l])=>{const b=el('button','chip',l);b.type='button';b.setAttribute('aria-pressed',renderBg===v);b.onclick=()=>{renderBg=v;renderPanel()};bgRow.appendChild(b)});
   const sb=el('button','btn primary','Сохранить картинку PNG');sb.type='button';sb.style.marginTop='8px';sb.onclick=saveRender;
-  const ub=el('button','btn','Обновить превью');ub.type='button';ub.style.margin='8px 0 0 6px';ub.onclick=()=>{try{$('#renderPrev').src=renderPNG(256,RBG[renderBg]).toDataURL()}catch(e){}};
-  rc.append(el('p','note','Фон'),bgRow,sb,ub);rw.append(ri,rc);rs.appendChild(rw);body.appendChild(rs);
+  rc.append(el('p','note','Фон'),bgRow,sb);rw.append(ri,rc);rs.appendChild(rw);body.appendChild(rs);
   const modelName=state.model==='slim'?'«Тонкая» (узкие руки)':'«Классическая» (широкие руки)';
   const ins=secEl('Как поставить скин'),box=el('div','inst');
   const item=(t,txt,m)=>{const d=el('div');d.appendChild(el('b',null,t));d.appendChild(document.createTextNode(txt));if(m)d.appendChild(el('div','muted',m));box.appendChild(d)};
@@ -1803,7 +1825,13 @@ function tplState(i){return sanitize(Object.assign(clone(DEFAULT),TEMPLATES[i].s
 function tplThumb(i){if(TPL_THUMB[i])return TPL_THUMB[i];const st=tplState(i),c=document.createElement('canvas');c.width=c.height=64;
   c.getContext('2d').putImageData(new ImageData(paint(st),64,64),0,0);
   return TPL_THUMB[i]=renderPNG(128,null,{src:c,st,yaw:-24,pitch:-6,R:{head:[0,8,0],body:[0,0,0],rarm:[0,0,4],larm:[0,0,-4],rleg:[0,0,0],lleg:[0,0,0],off:0}}).toDataURL()}
-function applyTemplate(i){const had=editCount()>0;pushHist('');const s=tplState(i);s.edits=null;state=s;loadE();update(true);
+/* примерка: навёл на шаблон — модель сразу в нём; увёл курсор — вернулся свой персонаж. Ничего не сохраняется, пока не кликнешь */
+let tplPrev=-1,tplPrevT=0;
+function previewTemplate(i){if(tplPrev===i)return;const st=tplState(i);if(st.model!==builtModel||st.figure!==builtFigure){const keep=state;state=st;try{buildModel()}finally{state=keep}}
+  const c=document.createElement('canvas');c.width=c.height=64;c.getContext('2d').putImageData(new ImageData(paint(st),64,64),0,0);
+  $('#model').style.setProperty('--skin',`url("${c.toDataURL('image/png')}")`);tplPrev=i;const t=$('#tryTag');if(t){t.textContent='Примерка: '+TEMPLATES[i].n;t.hidden=false}}
+function endPreview(){if(tplPrev<0)return;tplPrev=-1;if(state.model!==builtModel||state.figure!==builtFigure)buildModel();$('#model').style.setProperty('--skin',`url("${skinURL}")`);const t=$('#tryTag');if(t)t.hidden=true}
+function applyTemplate(i){endPreview();const had=editCount()>0;pushHist('');const s=tplState(i);s.edits=null;state=s;loadE();update(true);
   if(had)toastAction('Шаблон «'+TEMPLATES[i].n+'» поставлен. Твои ручные правки убраны.','Вернуть',()=>undo());
   else toast(TEMPLATES[i].n)}
 function renderTemplates(body){
@@ -1811,7 +1839,9 @@ function renderTemplates(body){
   const idx=TEMPLATES.map((t,i)=>i).filter(i=>{const t=TEMPLATES[i];return tplFilter==='all'||(tplFilter==='long'?LONG_HAIR.includes(t.s.hair):t.g===tplFilter)});
   const g=el('div','tplgrid');g.setAttribute('role','list');
   const cards=idx.map(i=>{const b=el('button','tplc');b.type='button';b.setAttribute('role','listitem');b.title=TEMPLATES[i].n;b.dataset.i=i;
-    const im=document.createElement('img');im.alt='';im.width=im.height=128;if(TPL_THUMB[i])im.src=TPL_THUMB[i];b.appendChild(im);b.appendChild(el('span','',TEMPLATES[i].n));b.onclick=()=>applyTemplate(i);g.appendChild(b);return [im,i]});
+    const im=document.createElement('img');im.alt='';im.width=im.height=128;if(TPL_THUMB[i])im.src=TPL_THUMB[i];b.appendChild(im);b.appendChild(el('span','',TEMPLATES[i].n));b.onclick=()=>applyTemplate(i);
+    b.onpointerenter=e=>{if(e.pointerType!=='mouse')return;clearTimeout(tplPrevT);tplPrevT=setTimeout(()=>previewTemplate(i),120)};b.onpointerleave=()=>{clearTimeout(tplPrevT);tplPrevT=setTimeout(endPreview,80)};g.appendChild(b);return [im,i]});
+  g.onpointerleave=()=>{clearTimeout(tplPrevT);endPreview()};
   body.appendChild(g);
   const job=++tplJob,todo=cards.filter(([im])=>!im.src);
   (function step(){if(job!==tplJob)return;const t0=performance.now();while(todo.length&&performance.now()-t0<12){const [im,i]=todo.shift();im.src=tplThumb(i)}if(todo.length)setTimeout(step,0)})();
@@ -1872,7 +1902,7 @@ function tourShow(i){tourI=i;let o=document.getElementById('tour');if(!o){o=el('
   o.append(hl,card);nx.focus()}
 function openModal(title,html){$('#mTitle').textContent=title;$('#mBody').innerHTML=html;$('#modal').hidden=false;$('#mClose').focus()}
 function closeModal(){$('#modal').hidden=true}
-const KEYS=[['Отменить','Ctrl+Z'],['Показать одну часть (навести курсор)','Q'],['Скин до правок','держать C'],['Повторить','Ctrl+Y'],['Рисовать вторым цветом','Правая кнопка мыши по модели или развёртке'],['Поменять цвета местами','X'],['Оттенок из лестницы','1–7'],['Размер кисти','[ и ]'],['Кисть','B'],['Заливка','G'],['Ластик','E'],['Пипетка','I или Alt + клик'],['Тень','D'],['Блик','L'],['Перекрасить цвет','R'],['Выделение области','S'],['Копировать / вырезать / вставить выделение','Ctrl+C / Ctrl+X / Ctrl+V'],['Стереть выделение','Del'],['Зеркальная кисть','M'],['Прямая линия от прошлой точки','Shift + клик'],['Повернуть персонажа','ЛКМ по фону'],['Приблизить / отдалить','Колёсико (развёртка — Ctrl + колёсико)'],['Сдвинуть вид','ПКМ + тянуть'],['Закрыть меню','Esc']];
+const KEYS=[['Отменить','Ctrl+Z'],['Показать одну часть (навести курсор)','Q'],['Скин до правок','держать C'],['Повторить','Ctrl+Y'],['Рисовать вторым цветом','Правая кнопка мыши по модели или развёртке'],['Поменять цвета местами','X'],['Оттенок из лестницы','1–7'],['Размер кисти','[ и ]'],['Кисть','B'],['Заливка','G'],['Ластик','E'],['Пипетка','I или Alt + клик'],['Тень','D'],['Блик','L'],['Сетка из двух цветов','T'],['Перекрасить цвет','R'],['Выделение области','S'],['Копировать / вырезать / вставить выделение','Ctrl+C / Ctrl+X / Ctrl+V'],['Стереть выделение','Del'],['Зеркальная кисть','M'],['Прямая линия от прошлой точки','Shift + клик'],['Повернуть персонажа','ЛКМ по фону'],['Приблизить / отдалить','Колёсико (развёртка — Ctrl + колёсико)'],['Сдвинуть вид','ПКМ + тянуть'],['Закрыть меню','Esc']];
 const setTool=t=>()=>{if(modeOf(cur)!=='paint')goMode('paint');tool=t;if(uiSimple&&!SIMPLE_TOOLS.includes(t))setSimple(false);else renderToolbar('paint')};
 const MENUS={
   file:[{l:'Новый скин',f:newSkin},{l:'Импорт PNG…',f:()=>$('#globalFile').click()},{sep:1},{l:'Открыть проект (.json)…',f:()=>$('#projFile').click()},{l:'Сохранить проект (.json)',f:saveProject},{sep:1},{l:'Экспорт PNG',f:downloadSkin},{l:'Сохранить в облако',f:()=>{goMode('export');if(cloudDb)cloudSave(false);else toast('Облако работает, когда редактор открыт на claude.ai')}},{l:'Сохранить в слот…',f:()=>goMode('export')}],
@@ -1910,19 +1940,20 @@ $('#showAll').onclick=()=>{hiddenParts.clear();applyVisibility();renderOutliner(
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMenu();closeModal();if(tourI>=0)tourShow(-1)}});
 
 /* ================= random / download ================= */
-function randomize(){
-  const pick=a=>a[Math.random()*a.length|0],ids=k=>OPT[k].map(o=>o[0]);pushHist('rand');
-  const s=clone(DEFAULT);s.name=state.name;s.preset=null;s.model=pick(['classic','slim']);s.skin=pick(PAL.skin.slice(0,8));
-  ['eyes','brows','mouth','hair','top','print','bottom','shoes'].forEach(k=>s[k]=pick(ids(k)));
-  s.figure=pick(['male','male','female','female3d']);if(s.figure!=='male'&&Math.random()<.7)s.model='slim';s.cheeks=Math.random()<.6?'none':pick(['blush','freckles']);s.beard=Math.random()<.65?'none':pick(['stubble','mustache','goatee','full']);
-  s.eyeColor=pick(PAL.eyes);s.eyeColor2=pick(PAL.eyes);s.hairColor=pick(PAL.hair);s.topColor=pick(PAL.cloth);do{s.topColor2=pick(PAL.cloth)}while(s.topColor2===s.topColor);
-  s.bottomColor=pick(PAL.cloth);s.shoesColor=pick(PAL.cloth);s.accColor=pick(PAL.cloth);
-  if(Math.random()<.75){const [c1,c2,c3,c4,c5]=pick(SCHEMES);Object.assign(s,{topColor:c1,topColor2:c2,bottomColor:c3,bottomColor2:c2,shoesColor:c4,accColor:c5})}
-  if(Math.random()<.7)s.hairColor=pick(['#2a2730','#1d1a19','#3b2416','#6b4423','#a86b32','#d9b35c','#efe7e1','#c8b7a6','#b8401f']);
-  if(s.top==='armor'){s.topColor='#aeb6c2'}if(s.bottom==='greaves'){s.bottomColor='#aeb6c2'}
-  s.acc=[];const cnt=Math.random()*3|0;for(let i=0;i<cnt;i++){const v=pick(ids('acc'));const g=ACC_GROUPS.find(g=>g.includes(v));s.acc=s.acc.filter(x=>x!==v&&!(g&&g.includes(x)));s.acc.push(v)}
-  s.topPattern=Math.random()<.7?'none':pick(ids('pattern'));s.bottomPattern=Math.random()<.75?'none':pick(ids('pattern'));s.bottomColor2=pick(PAL.cloth);
-  s.edits=null;state=s;loadE();update(true);toast('Случайный персонаж · Ctrl+Z — вернуть');
+/* «Случайно»: берём случайный образ из шаблонов (он уже собран со вкусом) и меняем то, что не ломает стиль:
+   причёску из подходящих, цвет волос, кожу, глаза и иногда палитру одежды из подобранных схем */
+const HAIR_POOL={f:['long','longbangs','verylong','wavy','wavywaist','knee','kneebangs','longside','bob','bangs','bangslong','twintails','twobraids','braid','highpony','longpony','ponytail','bun','spacebuns','curtain'],
+  m:['short','side','quiff','curtain','shaggy','undercut','buzz','spiky','mohawk','afro','dreads','emo','long','bob','ponytail']};
+function randomize(){const pick=a=>a[Math.random()*a.length|0];pushHist('rand');
+  const ti=Math.random()*TEMPLATES.length|0,T=TEMPLATES[ti],s=tplState(ti);
+  if(Math.random()<.55)s.hair=pick(HAIR_POOL[T.g]);
+  const natural=['#2a2730','#1d1a19','#3b2416','#6b4423','#a86b32','#d9b35c','#f2e2b0','#b8401f','#e8e8e8'];
+  if(Math.random()<.6)s.hairColor=Math.random()<.78?pick(natural):pick(['#f4b6c8','#3f7ad9','#7b3fa0','#2e9e5b','#d94a8c','#c62828']);
+  if(Math.random()<.6)s.skin=pick(Object.values(SK));
+  if(Math.random()<.5){s.eyeColor=pick(PAL.eyes);s.eyeColor2=s.eyeColor}
+  if(Math.random()<.4&&!['armor','robe'].includes(s.top)){const [c1,c2,c3,c4,c5]=pick(SCHEMES);Object.assign(s,{topColor:c1,topColor2:c2,bottomColor:c3,bottomColor2:c2,shoesColor:c4,accColor:c5})}
+  if(T.g==='m'&&Math.random()<.2&&s.beard==='none')s.beard=pick(['stubble','goatee','mustache','full']);
+  s.name=state.name;s.edits=null;state=sanitize(s);loadE();update(true);toast(T.n.replace(/ \d+$/,'')+' — случайный вариант · Ctrl+Z вернёт');
 }
 let dlApi=null;
 try{if(window.claude&&typeof window.claude.use==='function')window.claude.use('downloads').then(x=>{dlApi=x}).catch(()=>{})}catch(e){}
@@ -2021,7 +2052,7 @@ document.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('i
   if(CATS[cur].id==='paint'&&(e.ctrlKey||e.metaKey)&&k==='v'&&clip){e.preventDefault();selPasteMode();return}
   if(CATS[cur].id==='paint'&&(e.key==='Delete'||e.key==='Backspace')&&sel&&tool==='select'){e.preventDefault();selDelete();return}
   if(e.key==='Escape'&&(sel||pasting)){selClear()}
-  if(CATS[cur].id==='paint'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){const map={b:'brush',e:'eraser',i:'pick',g:'fill',d:'dark',l:'light',r:'replace',s:'select'};
+  if(CATS[cur].id==='paint'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){const map={b:'brush',e:'eraser',i:'pick',g:'fill',d:'dark',l:'light',r:'replace',s:'select',t:'dither'};
     if(k==='x'){swapColors();return}if(k==='q'){isolatePart(hover&&regionAt(hover[0],hover[1])?regionAt(hover[0],hover[1]).k:null);return}
     if(k==='c'&&!e.repeat){showBefore(true);return}if(k==='['||k===']'||e.code==='BracketLeft'||e.code==='BracketRight'){brushSize=Math.max(1,Math.min(8,brushSize+((k===']'||e.code==='BracketRight')?1:-1)));renderToolbar('paint');toast('Кисть: '+brushSize+' px');return}
     if(/^Digit[1-7]$/.test(e.code)){const i=+e.code.slice(5)-1;setPaint(toHex(shade(rgb(rampBase||paintColor),RAMP[i])),false,true);return}
