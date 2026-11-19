@@ -1138,10 +1138,18 @@ function paint(s){
   if(s.figure==='female'||s.figure==='female3d')drawFigure(P,s.figure==='female3d',lifted);
   drawAcc(s,P);
   snap=B.slice();NOISEK=0;drawHairBack(s,P);NOISEK=1;const hm2=diffMask(snap);hairPost(hm2,s,M);
+  coverSkin(s,M,hm,hm2);
   if(s.figure==='gendermod')gmChest(hm2);
   formPass(s,M,hm,hm2);
   return B;
 }
+/* одежда на втором слое (юбки, платья, манжеты) — и на основном слое под ней. Иначе при выключенном втором слое
+   (в редакторе или в настройках игры) под юбкой голые ноги и «голая попа». Под волосами кожу не трогаем */
+function coverSkin(s,M,hm,hm2){const sk=rgb(s.skin);
+  for(let i=0;i<4096;i++){const L=LIFT[M.p[i]];if(!L)continue;const o=i+L[1]*64+L[0];if(o<0||o>=4096)continue;const jo=o*4,jb=i*4;
+    if(B[jo+3]<250||hm[o]||hm2[o])continue;
+    if(Math.abs(B[jb]-sk[0])+Math.abs(B[jb+1]-sk[1])+Math.abs(B[jb+2]-sk[2])>60)continue;
+    B[jb]=B[jo]*.86;B[jb+1]=B[jo+1]*.86;B[jb+2]=B[jo+2]*.86;B[jb+3]=255}}
 /* Female Gender Mod берёт для груди куски второго слоя куртки (строки 34–43). Поднятые туда воротник, лямки и детали
    в игре висели бы на груди серой «полкой» снизу и обрывками спереди — для этой фигуры возвращаем их на основной слой.
    Пряди волос тоже: на объёмной груди они висели бы в воздухе косыми полосками, а на основном слое лежат по груди */
@@ -1276,12 +1284,13 @@ function platTextures(){if(platTex)return platTex;const mk=(w,h,fn)=>{const c=do
   const side=(i,j)=>{const v=20+hash(i*7+3,j)*2;return [v,v+1,v+4]};
   const k=(fn,f)=>(i,j)=>fn(i,j).map(v=>Math.round(v*f));// свет запечён: фильтры на больших гранях дорого стоят слабым видеокартам
   return platTex={top:mk(32,32,k(top,.92)),side:mk(32,2,k(side,.78)),side2:mk(32,2,k(side,.6)),bottom:mk(32,32,k(()=>[16,17,20],.5))}}
-function makePlatform(){const T=platTextures(),W=32*SC,H=2*SC,D=32*SC,box=document.createElement('div');box.className='box platbox';
-  box.style.transform=`translate3d(0px,${(17)*SC+1}px,0px)`;
-  [[T.top,W,D,`rotateX(90deg) translateZ(${H/2}px)`,[0,-1,0]],[T.side,W,H,`translateZ(${D/2}px)`,[0,0,1]],[T.side2,W,H,`rotateY(180deg) translateZ(${D/2}px)`,[0,0,-1]],
-   [T.side,D,H,`rotateY(-90deg) translateZ(${W/2}px)`,[-1,0,0]],[T.side,D,H,`rotateY(90deg) translateZ(${W/2}px)`,[1,0,0]],[T.bottom,W,D,`rotateX(-90deg) translateZ(${H/2}px)`,[0,1,0]]]
-  .forEach(([img,w,h,tr,n])=>{const f=document.createElement('div');f.className='face plat';f.style.cssText=`width:${w}px;height:${h}px;margin-left:${-w/2}px;margin-top:${-h/2}px;transform:${tr};background-image:url(${img});background-size:100% 100%;image-rendering:pixelated`;box.appendChild(f)});
-  return box}
+/* под ногами — мягкая тень-овал, как на превью у скиноделов, а не каменная плита 32×32: плита при взгляде сбоку
+   превращалась в кривую трапецию и съедала производительность */
+function makePlatform(){const W=24*SC,D=16*SC,box=document.createElement('div');box.className='box platbox';
+  box.style.transform=`translate3d(0px,${16*SC}px,0px)`;
+  const f=document.createElement('div');f.className='face plat shadow';
+  f.style.cssText=`width:${W}px;height:${D}px;margin-left:${-W/2}px;margin-top:${-D/2}px;transform:rotateX(90deg);background:radial-gradient(ellipse closest-side at 50% 50%,rgba(0,0,0,.75) 0%,rgba(0,0,0,.52) 38%,rgba(0,0,0,.2) 70%,rgba(0,0,0,0) 100%)`;
+  box.appendChild(f);return box}
 const OVK={head:'hat',body:'jacket',rarm:'rsleeve',larm:'lsleeve',rleg:'rpants',lleg:'lpants'};
 function makeBox(t,inf,ov,key){
   const W=(t.w+2*inf)*SC,H=(t.h+2*inf)*SC,D=(t.d+2*inf)*SC,box=document.createElement('div');box.className='box'+(ov?' ov':'');if(key)box.dataset.key=key;
@@ -2029,7 +2038,7 @@ function openAdjust(){if(modeOf(cur)!=='paint')goMode('paint');pushHist('');cons
 function setOv(on){$('#ovBtn').setAttribute('aria-pressed',on);$('#model').classList.toggle('flat',!on);try{localStorage.setItem('mcskin.ov',on?'1':'0')}catch(e){}}
 function toggleOv(){setOv($('#ovBtn').getAttribute('aria-pressed')!=='true')}
 let showPlat=true,stageBg='dark';const STAGE_BG={dark:'#0f1012',grey:'#3a3d44',light:'#d9dde4',blue:'#2c5d9e',green:'#00b140'};
-function setStageBg(k){stageBg=k;$('#stage').style.background=STAGE_BG[k]}function togglePlat(){showPlat=!showPlat;$('#model').classList.toggle('noplat',!showPlat)}
+function setStageBg(k){stageBg=k;$('#stage').style.background=STAGE_BG[k]}function togglePlat(){showPlat=!showPlat;$('#model').classList.toggle('noplat',!showPlat);const pm=$('#platModel');if(pm)pm.classList.toggle('noplat',!showPlat)}
 const TOUR=[['#modes','Режимы','Конструктор — собрать персонажа из готовых деталей. Рисование — дорисовать по пикселям. Экспорт — скачать скин, сохранить в облако и сделать картинку.'],
   ['.side.left','Левая панель','Начни с «Шаблонов»: 100 готовых людей. Наведи курсор — персонаж примерит, нажми — оставишь. Так же работают все варианты в разделах: тело, лицо, волосы, одежда, аксессуары. В рисовании — развёртка скина 64×64, файлы и операции со скином.'],
   ['#toolbar','Панель инструментов','Отменить и повторить, случайный персонаж, подбор цветов. В рисовании — кисть, заливка, ластик, пипетка, тени, перекраска и выделение.'],
@@ -2152,7 +2161,7 @@ async function natSaveUI(fn,blob,okMsg){// true/false, как и обычное 
     toastAction(okMsg,'Показать в папке',()=>natShow(p));return true}
   catch(e){toast('Не получилось сохранить файл: '+((e&&e.message)||'нет доступа к папке'));return false}}
 /* обновления программы: на сайте лежит version.json с номером свежей версии. Скачивание — только со страницы релизов этого проекта */
-const APP_VERSION='1.3.2';// единственное место с номером версии: отсюда же его берёт сборка программы
+const APP_VERSION='1.3.3';// единственное место с номером версии: отсюда же его берёт сборка программы
 const UPD_URL='https://enotsbeye.github.io/skin-studio/version.json',REL_OK=/^https:\/\/github\.com\/Enotsbeye\/skin-studio\//;
 // ссылка «Поддержать» берётся с сайта (version.json → donate) — её можно поменять без выпуска новой версии; только известные сервисы
 const DONATE_OK=/^https:\/\/(ko-fi\.com|boosty\.to|www\.buymeacoffee\.com|buymeacoffee\.com|paypal\.me|www\.paypal\.me|github\.com\/sponsors|patreon\.com|www\.patreon\.com)\//;

@@ -9,7 +9,7 @@ with sync_playwright() as p:
     out = pg.evaluate("""()=>{const NAMES=['head','hat','body','jacket','rarm','rsleeve','larm','lsleeve','rleg','rpants','lleg','lpants'];const res=[];
       const allow={face:['head','hat'],eyes:['head'],brows:['head'],mouth:['head'],cheeks:['head'],beard:['head','jacket'],hair:['head','hat','jacket','rpants','lpants'],
         shoes:['rleg','lleg','rpants','lpants'],bottom:['rleg','lleg','rpants','lpants','body','jacket'],hairDye:['head','hat','jacket','rpants','lpants']};
-      const accAllow={glasses:['hat'],sunglasses:['hat'],cap:['hat'],beanie:['hat'],headband:['hat'],crown:['hat'],headphones:['hat'],mask:['hat'],scarf:['jacket'],backpack:['jacket'],gloves:['rarm','larm'],
+      const accAllow={glasses:['hat'],sunglasses:['hat'],cap:['hat'],beanie:['hat'],headband:['hat'],crown:['hat'],headphones:['hat'],mask:['hat'],scarf:['jacket','body'],backpack:['jacket'],gloves:['rarm','larm'],
         helmet:['hat'],gasmask:['hat'],balaclava:['hat'],platecarrier:['jacket'],chestrig:['jacket'],patches:['rsleeve','lsleeve'],fingerless:['rarm','larm'],kneepads:['rpants','lpants'],catears:['hat'],horns:['hat']};
       for(const m of ['classic','slim']){const M=rmap(m==='slim');
         const base=Object.assign(clone(DEFAULT),{model:m,acc:[],hair:'bald',beard:'none',clothes3d:'flat'});
