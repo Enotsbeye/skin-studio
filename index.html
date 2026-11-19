@@ -104,7 +104,7 @@ button{font-family:inherit}
 .cam{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.2,.8,.2,1)}
 .cam.live{transition:none}
 .model,.piv,.box{position:absolute;left:0;top:0;width:0;height:0;transform-style:preserve-3d}
-.face{position:absolute;left:0;top:0;background-image:var(--skin);background-repeat:no-repeat;image-rendering:pixelated;image-rendering:crisp-edges;backface-visibility:hidden}
+.face{position:absolute;left:0;top:0;background-repeat:no-repeat;image-rendering:pixelated;image-rendering:crisp-edges;backface-visibility:hidden}
 .face.plat{background-image:none}
 .model.pxgrid .face:not(.plat)::after{content:"";position:absolute;inset:0;pointer-events:none;
   background-image:linear-gradient(rgba(10,12,16,.38) 1px,transparent 1px),linear-gradient(90deg,rgba(10,12,16,.38) 1px,transparent 1px);background-size:var(--cx) var(--cy)}
@@ -358,14 +358,14 @@ body.gift ::selection{background:#a3263f;color:#fff}
     <section class="center">
       <section class="stage" id="stage" aria-label="3D-просмотр персонажа">
         <div class="stage-tip" id="stageTip"></div><div class="beforetag" id="beforeTag" hidden>ДО</div><div class="beforetag trytag" id="tryTag" hidden></div>
-        <div class="cam" id="cam"><div class="model" id="model"></div></div>
+        <div class="cam platcam" id="platCam" aria-hidden="true"><div class="model" id="platModel"></div></div><div class="cam" id="cam"><div class="model" id="model"></div></div>
         <div class="stage-ui" id="stageUi">
           <span class="zoom adv"><button class="chip" type="button" id="zOut" aria-label="Отдалить">−</button><button class="chip" type="button" id="zVal" title="Сбросить камеру">100%</button><button class="chip" type="button" id="zIn" aria-label="Приблизить">+</button></span>
           <button class="chip adv" type="button" id="rotL" aria-label="Повернуть влево">◀</button>
           <button class="chip" type="button" id="viewF">Спереди</button>
           <button class="chip" type="button" id="viewB">Сзади</button>
           <button class="chip adv" type="button" id="rotR" aria-label="Повернуть вправо">▶</button>
-          <button class="chip adv" type="button" id="ovBtn" aria-pressed="true" title="Второй слой скина">2-й слой</button>
+          <button class="chip" type="button" id="ovBtn" aria-pressed="true" title="Показать или скрыть второй слой скина (волосы, объёмная одежда)">2-й слой</button>
           <button class="chip paintonly" type="button" id="beforeBtn" title="Держи, чтобы увидеть скин до правок (или держи C)">До / после</button>
           <select class="chip" id="poseSel" aria-label="Поза персонажа" title="Поза персонажа"></select>
         </div>
@@ -1105,9 +1105,15 @@ function paint(s){
   if(s.figure==='female'||s.figure==='female3d')drawFigure(P,s.figure==='female3d',lifted);
   drawAcc(s,P);
   snap=B.slice();NOISEK=0;drawHairBack(s,P);NOISEK=1;const hm2=diffMask(snap);hairPost(hm2,s,M);
+  if(s.figure==='gendermod')gmChest(hm2);
   formPass(s,M,hm,hm2);
   return B;
 }
+/* Female Gender Mod берёт для груди куски второго слоя куртки (строки 34–43). Поднятые туда воротник, лямки и детали
+   в игре висели бы на груди серой «полкой» снизу и обрывками спереди — для этой фигуры возвращаем их на основной слой.
+   Волосы не трогаем: пряди поверх груди выглядят естественно */
+function gmChest(hairM){for(let y=34;y<44;y++)for(let x=17;x<31;x++){const i=y*64+x,j=i*4;if(!B[j+3]||hairM[i])continue;
+  const b=(i-1024)*4;if(B[j+3]===255){B[b]=B[j];B[b+1]=B[j+1];B[b+2]=B[j+2];B[b+3]=255}B[j]=B[j+1]=B[j+2]=B[j+3]=0}}
 
 /* ================= thumbnails (flat front / back views) ================= */
 const work=document.createElement('canvas');work.width=work.height=64;const wctx=work.getContext('2d');
@@ -1219,8 +1225,8 @@ function quadBox(q,w,h,d,ov){const W=w*SC,H=h*SC,D=d*SC,box=document.createEleme
   [['n',W,H,`translateZ(${D/2}px)`,[0,0,1]],['w',D,H,`rotateY(-90deg) translateZ(${W/2}px)`,[-1,0,0]],['e',D,H,`rotateY(90deg) translateZ(${W/2}px)`,[1,0,0]],
    ['u',W,D,`rotateX(90deg) translateZ(${H/2}px)`,[0,-1,0]],['d',W,D,`rotateX(-90deg) translateZ(${H/2}px)`,[0,1,0]]].forEach(([k,gw,gh,tr,n])=>{const qq=q[k];if(!qq)return;
     const tw=qq[2]-qq[0],th=qq[3]-qq[1],sx=gw/tw,sy=gh/th,f=document.createElement('div');f.className='face';
-    f.style.cssText=`width:${gw}px;height:${gh}px;margin-left:${-gw/2}px;margin-top:${-gh/2}px;transform:${tr};background-size:${64*sx}px ${64*sy}px;background-position:${-qq[0]*sx}px ${-qq[1]*sy}px`;
-    f._tex=[qq[0],qq[1],tw,th,sx,sy];f.style.setProperty('--cx',sx+'px');f.style.setProperty('--cy',sy+'px');box.appendChild(f);faces.push({el:f,n})});
+    f.style.cssText=`width:${gw}px;height:${gh}px;margin-left:${-gw/2}px;margin-top:${-gh/2}px;transform:${tr};background-size:100% 100%`;
+    f._tex=[qq[0],qq[1],tw,th,sx,sy];f.style.setProperty('--cx',sx+'px');f.style.setProperty('--cy',sy+'px');box.appendChild(f);faces.push({el:f,n,ov,lv:-1})});
   return box}
 function makeBreasts(){const wrap=document.createElement('div');wrap.className='box';
   [[-2,'l','lo'],[2,'r','ro']].forEach(([cx,k,ko])=>{const pv=document.createElement('div');pv.className='box';
@@ -1235,12 +1241,13 @@ function platTextures(){if(platTex)return platTex;const mk=(w,h,fn)=>{const c=do
   // тёмная незаметная подставка: плитки 8×8 с тонкими швами, к краям темнее
   const top=(i,j)=>{const e=Math.max(Math.abs(i-15.5),Math.abs(j-15.5))/16,seam=i%8===0||j%8===0,t=hash(i*3+1,j*5+2)*3;const v=(seam?27:33+t)-e*9;return [v,v+2,v+6]};
   const side=(i,j)=>{const v=20+hash(i*7+3,j)*2;return [v,v+1,v+4]};
-  return platTex={top:mk(32,32,top),side:mk(32,2,side),bottom:mk(32,32,()=>[16,17,20])}}
+  const k=(fn,f)=>(i,j)=>fn(i,j).map(v=>Math.round(v*f));// свет запечён: фильтры на больших гранях дорого стоят слабым видеокартам
+  return platTex={top:mk(32,32,k(top,.92)),side:mk(32,2,k(side,.78)),side2:mk(32,2,k(side,.6)),bottom:mk(32,32,k(()=>[16,17,20],.5))}}
 function makePlatform(){const T=platTextures(),W=32*SC,H=2*SC,D=32*SC,box=document.createElement('div');box.className='box platbox';
   box.style.transform=`translate3d(0px,${(17)*SC+1}px,0px)`;
-  [[T.top,W,D,`rotateX(90deg) translateZ(${H/2}px)`,[0,-1,0]],[T.side,W,H,`translateZ(${D/2}px)`,[0,0,1]],[T.side,W,H,`rotateY(180deg) translateZ(${D/2}px)`,[0,0,-1]],
+  [[T.top,W,D,`rotateX(90deg) translateZ(${H/2}px)`,[0,-1,0]],[T.side,W,H,`translateZ(${D/2}px)`,[0,0,1]],[T.side2,W,H,`rotateY(180deg) translateZ(${D/2}px)`,[0,0,-1]],
    [T.side,D,H,`rotateY(-90deg) translateZ(${W/2}px)`,[-1,0,0]],[T.side,D,H,`rotateY(90deg) translateZ(${W/2}px)`,[1,0,0]],[T.bottom,W,D,`rotateX(-90deg) translateZ(${H/2}px)`,[0,1,0]]]
-  .forEach(([img,w,h,tr,n])=>{const f=document.createElement('div');f.className='face plat';f.style.cssText=`width:${w}px;height:${h}px;margin-left:${-w/2}px;margin-top:${-h/2}px;transform:${tr};background-image:url(${img});background-size:100% 100%;image-rendering:pixelated`;box.appendChild(f);faces.push({el:f,n})});
+  .forEach(([img,w,h,tr,n])=>{const f=document.createElement('div');f.className='face plat';f.style.cssText=`width:${w}px;height:${h}px;margin-left:${-w/2}px;margin-top:${-h/2}px;transform:${tr};background-image:url(${img});background-size:100% 100%;image-rendering:pixelated`;box.appendChild(f)});
   return box}
 const OVK={head:'hat',body:'jacket',rarm:'rsleeve',larm:'lsleeve',rleg:'rpants',lleg:'lpants'};
 function makeBox(t,inf,ov,key){
@@ -1254,8 +1261,8 @@ function makeBox(t,inf,ov,key){
     [[t.u+t.d+t.w,t.v,t.w,t.d],W,D,`rotateX(-90deg) translateZ(${H/2}px)`,[0,1,0]]];
   for(const [[tx,ty,tw,th],gw,gh,tr,nrm] of list){
     const f=document.createElement('div');f.className='face';const sx=gw/tw,sy=gh/th;
-    f.style.cssText=`width:${gw}px;height:${gh}px;margin-left:${-gw/2}px;margin-top:${-gh/2}px;transform:${tr};background-size:${64*sx}px ${64*sy}px;background-position:${-tx*sx}px ${-ty*sy}px`;
-    f._tex=[tx,ty,tw,th,sx,sy];f.style.setProperty('--cx',sx+'px');f.style.setProperty('--cy',sy+'px');box.appendChild(f);faces.push({el:f,n:nrm});
+    f.style.cssText=`width:${gw}px;height:${gh}px;margin-left:${-gw/2}px;margin-top:${-gh/2}px;transform:${tr};background-size:100% 100%`;
+    f._tex=[tx,ty,tw,th,sx,sy];f.style.setProperty('--cx',sx+'px');f.style.setProperty('--cy',sy+'px');box.appendChild(f);faces.push({el:f,n:nrm,ov,lv:-1});
   }
   return box;
 }
@@ -1274,7 +1281,7 @@ function buildModel(){
     const h=document.createElement('div');h.className='box';h.style.transform=`translate3d(${d.o[0]*SC}px,${d.o[1]*SC}px,0px)`;
     h.appendChild(makeBox(d.b,0,false,k));h.appendChild(makeBox(d.v,d.i,true,OVK[k]));pv.appendChild(h);m.appendChild(pv);pivs[k]=pv}
   if(state.figure==='gendermod')pivs.body.appendChild(makeBreasts());builtFigure=state.figure;
-  m.appendChild(makePlatform());
+  const pm=$('#platModel');if(pm){pm.innerHTML='';pm.appendChild(makePlatform())}
   applyRot();applyZoom();applyPaintMode();applyVisibility();
 }
 function drawGizmo(cy,sy,cp,sp){const g=document.getElementById('gizmo');if(!g)return;
@@ -1282,12 +1289,30 @@ function drawGizmo(cy,sy,cp,sp){const g=document.getElementById('gizmo');if(!g)r
   const ax=[['X',[1,0,0],'#e5534b'],['Y',[0,-1,0],'#5fbf5a'],['Z',[0,0,1],'#3e90ff']].map(([n,v,c])=>[n,pr(v),c]).sort((a,b)=>a[1][2]-b[1][2]);
   g.innerHTML=ax.map(([n,[x,y],c])=>`<line x1="0" y1="0" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${c}" stroke-width="2.5"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6" fill="${c}"/><text x="${x.toFixed(1)}" y="${(y+3).toFixed(1)}" font-size="8" text-anchor="middle" fill="#fff" font-family="sans-serif">${n}</text>`).join('')}
 const LIGHT=(()=>{const v=[-.35,-.55,.76],l=Math.hypot(...v);return v.map(a=>a/l)})();
+/* свет без CSS-фильтров и своя маленькая картинка у каждой грани: грань перерисовывается только когда
+   изменились её пиксели или ступень света. Ходьба и вращение почти ничего не перерисовывают, мазок кисти — 1–2 грани */
+const SHADE_N=10,SHADE_LO=.45,SHADE_HI=1.1;let shownPx=null,beforePx=null;
+const fCv=document.createElement('canvas'),fCx=fCv.getContext('2d');
+function faceImg(f){const px=shownPx,t=f.el._tex;if(!px||!t)return;const lv=f.lv<0?SHADE_N-1:f.lv;
+  let h=(lv+1)*2654435761>>>0,any=0;
+  for(let y=t[1];y<t[1]+t[3];y++)for(let x=t[0],j=(y*64+x)*4;x<t[0]+t[2];x++,j+=4){h=Math.imul(h^(px[j]|px[j+1]<<8|px[j+2]<<16|px[j+3]<<24),16777619);any|=px[j+3]}
+  if(f.ov){const show=any>0||(modeOf(cur)==='paint'&&layer3d==='ov');if(f.hid!==!show){f.hid=!show;f.el.style.display=show?'':'none'}if(!show){f.sig=null;return}}
+  if(h===f.sig)return;f.sig=h;
+  fCv.width=t[2];fCv.height=t[3];const id=fCx.createImageData(t[2],t[3]),o=id.data,k=SHADE_LO+(SHADE_HI-SHADE_LO)*lv/(SHADE_N-1);
+  for(let y=0,q=0;y<t[3];y++)for(let x=0,j=((t[1]+y)*64+t[0])*4;x<t[2];x++,j+=4,q+=4){o[q]=px[j]*k;o[q+1]=px[j+1]*k;o[q+2]=px[j+2]*k;o[q+3]=px[j+3]}
+  fCx.putImageData(id,0,0);f.el.style.backgroundImage=`url(${fCv.toDataURL('image/png')})`}
+function showPx(px){shownPx=px;for(const f of faces)faceImg(f)}
+function updOvFaces(){if(shownPx)showPx(shownPx)}
+function syncPlat(){const pc=$('#platCam'),c=$('#cam');if(!pc||!c)return;if(pc.style.transform!==c.style.transform)pc.style.transform=c.style.transform;
+  const live=c.classList.contains('live');if(pc.classList.contains('live')!==live)pc.classList.toggle('live',live);
+  // снизу подставка закрывает ноги, сверху — ноги стоят на ней
+  const front=pitch>0;if(front!==(pc.previousElementSibling===c))front?c.after(pc):c.before(pc)}
 function applyRot(){
-  $('#model').style.transform=`rotateX(${pitch}deg) rotateY(${yaw}deg)`;
+  const tr=`rotateX(${pitch}deg) rotateY(${yaw}deg)`;$('#model').style.transform=tr;const pmd=$('#platModel');if(pmd)pmd.style.transform=tr;syncPlat();
   const cy=Math.cos(yaw*Math.PI/180),sy=Math.sin(yaw*Math.PI/180),cp=Math.cos(pitch*Math.PI/180),sp=Math.sin(pitch*Math.PI/180);
   drawGizmo(cy,sy,cp,sp);
   for(const f of faces){const [x,y,z]=f.n,x1=x*cy+z*sy,z1=-x*sy+z*cy,y2=y*cp-z1*sp,z2=y*sp+z1*cp;
-    const d=x1*LIGHT[0]+y2*LIGHT[1]+z2*LIGHT[2];f.el.style.filter=`brightness(${(0.45+0.65*Math.max(0,d)).toFixed(3)})`}
+    const d=x1*LIGHT[0]+y2*LIGHT[1]+z2*LIGHT[2],lv=Math.round(Math.max(0,d)*(SHADE_N-1));if(lv!==f.lv){f.lv=lv;faceImg(f)}}
 }
 let uz=1,panX=0,panY=0,liveT=0;
 function applyZoom(){const z=CATS[cur].zoom,k=(z?1.4:1)*uz,fy=(z?9:-1)*SC;
@@ -1356,10 +1381,14 @@ let animT=0,lastRT=0;function tick(t){
   requestAnimationFrame(tick);
 }
 let lastFinal=new Uint8ClampedArray(16384);
+// основа из конструктора пересчитывается только когда меняется персонаж, а не на каждый мазок кисти
+let baseKey='',baseCache=null;
+function basePx(){const k=JSON.stringify(state,(key,v)=>key==='edits'||key==='layers'||key==='al'||key==='name'?undefined:v);
+  if(k!==baseKey||!baseCache){baseKey=k;baseCache=paint(state).slice()}return baseCache.slice()}
 function refreshSkin(){if(tplPrev>=0)endPreview();
-  lastFinal=compositeLayers(paint(state));
+  lastFinal=compositeLayers(basePx());
   sctx.putImageData(new ImageData(lastFinal,64,64),0,0);drawEditor();skinURL=skinCv.toDataURL('image/png');
-  $('#model').style.setProperty('--skin',`url("${skinURL}")`);const ti=$('#texImg');if(ti)ti.src=skinURL;save();
+  showPx(lastFinal);const ti=$('#texImg');if(ti)ti.src=skinURL;save();
 }
 function update(full){if(tplPrev>=0)endPreview();dirty=true;if(state.model!==builtModel||state.figure!==builtFigure)buildModel();refreshSkin();if(full)renderPanel();setUndoState();updStatus()}
 
@@ -1383,7 +1412,7 @@ function renderTabs(){
   CATS.forEach((c,i)=>{if(modeOf(i)!=='build')return;const b=el('button','cat'+(i===cur?' on':''),c.t);b.type='button';if(i===cur)b.setAttribute('aria-current','page');b.onclick=()=>go(i);nav.appendChild(b)});
 }
 let beforeURL=null,soloPrev=null;
-function go(i){if(tplPrev>=0)endPreview();const pm=modeOf(cur);cur=Math.max(0,Math.min(CATS.length-1,i));if(modeOf(cur)==='paint'&&pm!=='paint')beforeURL=skinURL;if(modeOf(cur)==='build')lastBuild=cur;seen.add(cur);closeMenu();renderPanel();applyZoom()}
+function go(i){if(tplPrev>=0)endPreview();const pm=modeOf(cur);cur=Math.max(0,Math.min(CATS.length-1,i));if(modeOf(cur)==='paint'&&pm!=='paint'){beforeURL=skinURL;beforePx=lastFinal.slice()}if(modeOf(cur)==='build')lastBuild=cur;seen.add(cur);closeMenu();renderPanel();applyZoom()}
 
 /* ---------- icons (own line icons) ---------- */
 const ICONS={dither:'<path d="M4 4h4v4H4zM12 4h4v4h-4zM8 8h4v4H8zM16 8h4v4h-4zM4 12h4v4H4zM12 12h4v4h-4zM8 16h4v4H8zM16 16h4v4h-4z"/>',noise:'<path d="M5 6h2M11 5h2M17 7h2M7 11h2M14 12h2M4 16h2M10 17h2M18 15h2M13 19h2"/>',
@@ -1460,7 +1489,7 @@ function isolatePart(k){
   if(soloPrev){hiddenParts.clear();soloPrev.forEach(x=>hiddenParts.add(x));soloPrev=null;applyVisibility();renderOutliner();toast('Все части видны');return}
   const base=k&&Object.keys(OV_OF).find(b=>b===k||OV_OF[b]===k);if(!base){toast('Наведи курсор на часть тела и нажми Q');return}
   soloPrev=[...hiddenParts];hiddenParts.clear();PKEYS.forEach(x=>{if(x!==base&&x!==OV_OF[base])hiddenParts.add(x)});applyVisibility();renderOutliner();toast(PART_RU[base]+' отдельно · Q — вернуть всё')}
-function showBefore(on){if(on&&!beforeURL)return;$('#model').style.setProperty('--skin',`url("${on?beforeURL:skinURL}")`);$('#beforeTag').hidden=!on}
+function showBefore(on){if(on&&!beforeURL)return;showPx(on&&beforePx?beforePx:lastFinal);$('#beforeTag').hidden=!on}
 let refCv=null;
 function renderRef(){const b=$('#refBody');if(!b)return;b.innerHTML='';$('#refClear').hidden=!refCv;
   if(!refCv){b.appendChild(el('div','empty','Картинка, с которой срисовываешь. Клик по ней — взять цвет'));return}
@@ -1623,18 +1652,24 @@ function editsBanner(){const n=editCount();if(!n)return null;const b=el('div','b
 let paintColor2='#1a1a1d',strokeAlt=false,rampBase=null;const RAMP=[.55,.7,.85,1,1.13,1.27,1.42];
 const curCol=()=>strokeAlt?paintColor2:paintColor;
 let brushSize=1,tool='brush',paintColor='#2f80d1',edZoom=1,hints=true,stroking=false,lastP=null,visited=null,hover=null,refreshQueued=false;
-function regions(){const P=parts(state.model==='slim'),out=[];
+let regC=null,regM='';
+function regions(){if(regC&&regM===state.model)return regC;regM=state.model;const P=parts(state.model==='slim'),out=regC=[];
   for(const k in P){const t=P[k],ov=['hat','jacket','rsleeve','lsleeve','rpants','lpants'].includes(k);
     const f={top:[t.u+t.d,t.v,t.w,t.d],bottom:[t.u+t.d+t.w,t.v,t.w,t.d],right:[t.u,t.v+t.d,t.d,t.h],front:[t.u+t.d,t.v+t.d,t.w,t.h],left:[t.u+t.d+t.w,t.v+t.d,t.d,t.h],back:[t.u+2*t.d+t.w,t.v+t.d,t.w,t.h]};
     for(const fn in f)out.push({k,fn,ov,r:f[fn]})}return out}
 function regionAt(x,y){return regions().find(({r})=>x>=r[0]&&x<r[0]+r[2]&&y>=r[1]&&y<r[1]+r[3])}
+const edCv=document.createElement('canvas');edCv.width=edCv.height=64;const edImg=new ImageData(64,64);let edUsedKey='',edUsed=null;
 function drawEditor(){
   const c=document.getElementById('edc');if(!c)return;const x=c.getContext('2d'),k=12,R=regions();
-  const used=new Uint8Array(4096);R.forEach(({r})=>{for(let j=0;j<r[3];j++)for(let i=0;i<r[2];i++)used[(r[1]+j)*64+r[0]+i]=1});
-  for(let y=0;y<64;y++)for(let i=0;i<64;i++){const idx=y*64+i,j=idx*4,a=lastFinal[j+3];
-    x.fillStyle=((i+y)&1)?'#252e45':'#1c2336';x.fillRect(i*k,y*k,k,k);
-    if(a){x.fillStyle=`rgba(${lastFinal[j]},${lastFinal[j+1]},${lastFinal[j+2]},${a/255})`;x.fillRect(i*k,y*k,k,k)}
-    if(hints&&!used[idx]){x.fillStyle='rgba(6,8,14,.72)';x.fillRect(i*k,y*k,k,k)}}
+  if(edUsedKey!==state.model){edUsedKey=state.model;edUsed=new Uint8Array(4096);R.forEach(({r})=>{for(let j=0;j<r[3];j++)for(let i=0;i<r[2];i++)edUsed[(r[1]+j)*64+r[0]+i]=1})}
+  // вся развёртка собирается в картинку 64×64 и растягивается одним вызовом (раньше — 4–12 тысяч fillRect на кадр)
+  const used=edUsed,o=edImg.data,L=lastFinal;
+  for(let idx=0;idx<4096;idx++){const j=idx*4,odd=((idx&63)+(idx>>6))&1,a=L[j+3]/255;
+    let r=odd?37:28,g=odd?46:35,b=odd?69:54;
+    if(a){r=r*(1-a)+L[j]*a;g=g*(1-a)+L[j+1]*a;b=b*(1-a)+L[j+2]*a}
+    if(hints&&!used[idx]){r=r*.28+6*.72;g=g*.28+8*.72;b=b*.28+14*.72}
+    o[j]=r;o[j+1]=g;o[j+2]=b;o[j+3]=255}
+  edCv.getContext('2d').putImageData(edImg,0,0);x.imageSmoothingEnabled=false;x.drawImage(edCv,0,0,64*k,64*k);
   if(edZoom>1){x.strokeStyle='rgba(255,255,255,.06)';x.lineWidth=1;x.beginPath();for(let i=1;i<64;i++){x.moveTo(i*k+.5,0);x.lineTo(i*k+.5,64*k);x.moveTo(0,i*k+.5);x.lineTo(64*k,i*k+.5)}x.stroke()}
   if(hints){x.lineWidth=2;R.forEach(({r,ov})=>{x.strokeStyle=ov?'rgba(232,163,61,.85)':'rgba(62,144,255,.85)';x.strokeRect(r[0]*k+1,r[1]*k+1,r[2]*k-2,r[3]*k-2)})}
   if(hover){const reg=regionAt(hover[0],hover[1]);if(reg){x.fillStyle='rgba(255,255,255,.08)';x.fillRect(reg.r[0]*k,reg.r[1]*k,reg.r[2]*k,reg.r[3]*k)}
@@ -1684,8 +1719,8 @@ function strokeMove(p,interp){hover=p;if(!stroking||!p){queueHover();return}if(i
 function strokeEnd(){if(!stroking)return;stroking=false;lastPaint=lastP;syncE();save();updEdInfo();const cnt=document.getElementById('edCount');if(recent.length&&!document.getElementById('recentRow'))renderColor();if(palMode==='skin')renderPalette()}
 function faceTexel(e){const t=e.target&&e.target._tex;if(!t)return null;
   return [t[0]+Math.min(t[2]-1,Math.max(0,Math.floor(e.offsetX/t[4]))),t[1]+Math.min(t[3]-1,Math.max(0,Math.floor(e.offsetY/t[5])))]}
-function applyPaintMode(){const m=$('#model'),on=CATS[cur].id==='paint'&&on3d;m.classList.toggle('paintmode',on);m.classList.toggle('pxgrid',CATS[cur].id==='paint'&&pxGrid);m.classList.toggle('noplat',!showPlat);m.classList.toggle('pick-base',on&&layer3d==='base');
-  if(on&&layer3d==='ov'&&m.classList.contains('flat')){m.classList.remove('flat');$('#ovBtn').setAttribute('aria-pressed','true')}}
+function applyPaintMode(){const m=$('#model'),on=CATS[cur].id==='paint'&&on3d;m.classList.toggle('paintmode',on);m.classList.toggle('pxgrid',CATS[cur].id==='paint'&&pxGrid);m.classList.toggle('noplat',!showPlat);const pmd=$('#platModel');if(pmd)pmd.classList.toggle('noplat',!showPlat);m.classList.toggle('pick-base',on&&layer3d==='base');
+  if(on&&layer3d==='ov'&&m.classList.contains('flat')&&!applyPaintMode._ask){applyPaintMode._ask=1;setTimeout(()=>applyPaintMode._ask=0,4000);toastAction('Второй слой скрыт — рисунок на нём не будет виден.','Показать',()=>setOv(true))}updOvFaces()}
 function applyOne(x,y){const reg=regionAt(x,y);if(!reg)return;const n=brushSize,lo=-Math.floor((n-1)/2),c=lo+(n-1)/2,rr=(n/2)*(n/2),r=reg.r;
   for(let dy=lo;dy<lo+n;dy++)for(let dx=lo;dx<lo+n;dx++){if(brushShape==='circle'&&n>2&&(dx-c)*(dx-c)+(dy-c)*(dy-c)>rr-.3)continue;const px=x+dx,py=y+dy;if(px>=r[0]&&px<r[0]+r[2]&&py>=r[1]&&py<r[1]+r[3])applyPixel(px,py)}}
 function applyPixel(x,y){
@@ -1848,7 +1883,7 @@ function renderPanelTip(){$('#stageTip').textContent=modeOf(cur)==='paint'&&on3d
 let uiSimple=true;try{uiSimple=localStorage.getItem('mcskin.ui')!=='full'}catch(e){}
 const SIMPLE_TOOLS=['brush','fill','eraser','pick','dark','light'];
 function setSimple(v){uiSimple=v;try{localStorage.setItem('mcskin.ui',v?'simple':'full')}catch(e){}
-  if(v){if(!SIMPLE_TOOLS.includes(tool)){if(tool==='select')selClear();tool='brush'}layer3d='auto';on3d=true;hiddenParts.clear();soloPrev=null;applyVisibility();if($('#model').classList.contains('flat'))toggleOv()}
+  if(v){if(!SIMPLE_TOOLS.includes(tool)){if(tool==='select')selClear();tool='brush'}layer3d='auto';on3d=true;hiddenParts.clear();soloPrev=null;applyVisibility()}
   applyUi();renderPanel();fit()}
 function applyUi(){document.body.classList.toggle('simple',uiSimple);const b=$('#uiBtn');if(b)b.textContent=uiSimple?'Все инструменты':'Простой вид'}
 let tplFilter='all';const TPL_THUMB=[];let tplJob=0;
@@ -1857,17 +1892,16 @@ function tplState(i){return sanitize(Object.assign(clone(DEFAULT),TEMPLATES[i].s
 function tplThumb(i){if(TPL_THUMB[i])return TPL_THUMB[i];const st=tplState(i),c=document.createElement('canvas');c.width=c.height=64;
   c.getContext('2d').putImageData(new ImageData(paint(st),64,64),0,0);
   return TPL_THUMB[i]=renderPNG(128,null,{src:c,st,yaw:-24,pitch:-6,R:{head:[0,8,0],body:[0,0,0],rarm:[0,0,4],larm:[0,0,-4],rleg:[0,0,0],lleg:[0,0,0],off:0}}).toDataURL()}
-/* примерка: навёл на шаблон — модель сразу в нём; увёл курсор — вернулся свой персонаж. Ничего не сохраняется, пока не кликнешь */
+/* предпросмотр шаблона на модели (сейчас из интерфейса не вызывается: варианты меняются по клику) — свой персонаж. Ничего не сохраняется, пока не кликнешь */
 let tplPrev=-1,tplPrevT=0;
 function previewState(st,id,label,withEdits){if(tplPrev===id)return;if(st.model!==builtModel||st.figure!==builtFigure){const keep=state;state=st;try{buildModel()}finally{state=keep}}
   const c=document.createElement('canvas');c.width=c.height=64;const px=withEdits?compositeLayers(paint(st)):paint(st);c.getContext('2d').putImageData(new ImageData(px,64,64),0,0);
-  $('#model').style.setProperty('--skin',`url("${c.toDataURL('image/png')}")`);tplPrev=id;const t=$('#tryTag');if(t){t.textContent=label;t.hidden=false}}
+  showPx(px);tplPrev=id;const t=$('#tryTag');if(t){t.textContent=label;t.hidden=false}}
 function previewTemplate(i){previewState(tplState(i),i,'Примерка: '+TEMPLATES[i].n,false)}
-/* примерка вариантов в конструкторе: навёл на карточку — видно на модели, клик — оставить */
+/* варианты в конструкторе меняются только по клику */
 let optSeq=1000;
-function hoverPreview(b,mk,label){const id=optSeq++;b.onpointerenter=e=>{if(e.pointerType!=='mouse')return;clearTimeout(tplPrevT);tplPrevT=setTimeout(()=>previewState(mk(),id,label,true),140)};
-  b.onpointerleave=()=>{clearTimeout(tplPrevT);tplPrevT=setTimeout(endPreview,90)};return b}
-function endPreview(){if(tplPrev<0)return;tplPrev=-1;if(state.model!==builtModel||state.figure!==builtFigure)buildModel();$('#model').style.setProperty('--skin',`url("${skinURL}")`);const t=$('#tryTag');if(t)t.hidden=true}
+function hoverPreview(b){return b}// примерка при наведении убрана: вариант меняется только по клику (Ctrl+Z вернёт)
+function endPreview(){if(tplPrev<0)return;tplPrev=-1;if(state.model!==builtModel||state.figure!==builtFigure)buildModel();showPx(lastFinal);const t=$('#tryTag');if(t)t.hidden=true}
 function applyTemplate(i){endPreview();const had=editCount()>0;pushHist('');const s=tplState(i);s.edits=null;state=s;loadE();update(true);
   if(had)toastAction('Шаблон «'+TEMPLATES[i].n+'» поставлен. Твои ручные правки убраны.','Вернуть',()=>undo());
   else toast(TEMPLATES[i].n)}
@@ -1886,9 +1920,7 @@ function renderTemplates(body){
   const idx=TEMPLATES.map((t,i)=>i).filter(i=>{const t=TEMPLATES[i];return tplFilter==='all'||(tplFilter==='long'?LONG_HAIR.includes(t.s.hair):t.g===tplFilter)});
   const g=el('div','tplgrid');g.setAttribute('role','list');
   const cards=idx.map(i=>{const b=el('button','tplc tplt');b.type='button';b.setAttribute('role','listitem');b.title=TEMPLATES[i].n;b.dataset.i=i;
-    const im=document.createElement('img');im.alt='';im.width=im.height=128;if(TPL_THUMB[i])im.src=TPL_THUMB[i];b.appendChild(im);b.appendChild(el('span','',TEMPLATES[i].n));b.onclick=()=>applyTemplate(i);
-    b.onpointerenter=e=>{if(e.pointerType!=='mouse')return;clearTimeout(tplPrevT);tplPrevT=setTimeout(()=>previewTemplate(i),120)};b.onpointerleave=()=>{clearTimeout(tplPrevT);tplPrevT=setTimeout(endPreview,80)};g.appendChild(b);return [im,i]});
-  g.onpointerleave=()=>{clearTimeout(tplPrevT);endPreview()};
+    const im=document.createElement('img');im.alt='';im.width=im.height=128;if(TPL_THUMB[i])im.src=TPL_THUMB[i];b.appendChild(im);b.appendChild(el('span','',TEMPLATES[i].n));b.onclick=()=>applyTemplate(i);g.appendChild(b);return [im,i]});
   body.appendChild(g);
   const job=++tplJob,todo=cards.filter(([im])=>!im.src);
   (function step(){if(job!==tplJob)return;const t0=performance.now();while(todo.length&&performance.now()-t0<12){const [im,i]=todo.shift();im.src=tplThumb(i)}if(todo.length)setTimeout(step,0)})();
@@ -1950,7 +1982,9 @@ function openAdjust(){if(modeOf(cur)!=='paint')goMode('paint');pushHist('');cons
   const btns=el('div','row');btns.style.marginTop='12px';const ok=el('button','btn primary','Применить'),no=el('button','btn','Отмена');ok.type=no.type='button';
   ok.onclick=()=>{modalOnClose=null;closeModal();if(!layerCount(L[AL].E)){L.splice(AL,1);AL=Math.max(0,AL-1);E=L[AL].E}syncE();update(true);toast('Готово · слой «Цвет» можно скрыть или удалить в «Слоях»')};
   no.onclick=()=>closeModal();btns.append(ok,no);b.appendChild(btns);modalOnClose=()=>undo();apply()}
-function toggleOv(){const b=$('#ovBtn');const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);$('#model').classList.toggle('flat',!on)}
+// второй слой показывается или прячется только по выбору человека; выбор запоминается
+function setOv(on){$('#ovBtn').setAttribute('aria-pressed',on);$('#model').classList.toggle('flat',!on);try{localStorage.setItem('mcskin.ov',on?'1':'0')}catch(e){}}
+function toggleOv(){setOv($('#ovBtn').getAttribute('aria-pressed')!=='true')}
 let showPlat=true,stageBg='dark';const STAGE_BG={dark:'#0f1012',grey:'#3a3d44',light:'#d9dde4',blue:'#2c5d9e',green:'#00b140'};
 function setStageBg(k){stageBg=k;$('#stage').style.background=STAGE_BG[k]}function togglePlat(){showPlat=!showPlat;$('#model').classList.toggle('noplat',!showPlat)}
 const TOUR=[['#modes','Режимы','Конструктор — собрать персонажа из готовых деталей. Рисование — дорисовать по пикселям. Экспорт — скачать скин, сохранить в облако и сделать картинку.'],
@@ -1973,24 +2007,27 @@ function openModal(title,html){$('#mTitle').textContent=title;$('#mBody').innerH
 /* ===== особый режим: включается кодом и живёт только на том устройстве, где его ввели =====
    в файле лежит не сам код, а его отпечаток (хеш); тексты режима зашифрованы ключом из кода и без него не читаются */
 const GIFT_HASH=7684380108615282;
-const GIFT_BLOB='UqlnxqBmoQP9NIOzsLFKc7K9t3BxTPQoPoAnol6ltk3deWcOQ2e5xck90gU2curJXmjJ5flYP8fJdqTnKFY2cz4oS8l/kRWJRUCsywvrpXhb2SGH5VarKUqzPrzXQ/lAjLeiL019SQDDqhEkouPdTtowxfhlJMDfiFfju3tx41mzwWLxnd9etG1dfowW+9LoTxA9nvHqXCLYq/X9kBZkV0zpzM6mB0LZa5AU0lti2Xt450+SI+r7ZNc3nb0vK1kdW3xOFR54ZKBL/ZoLz2+B4U10V8WfTrq6FQSXTpa8eIKW+nLilBrlfnwxuN7cdkqgq19ni+sGh15hGMc/5LPod1aUhIQeVGm13ty63Wrk0gdXur4ayggJMT0NcSBzvbSHnkmNlHMJZevfnghzgbzD7FlfV/48KB5VhNTw+dfDzZy2F2yjNA6GtYxEdDKIqtg8dTvG8ZTU0I0ioQp4HdhZSO+CwsMuFD2/oXlS7qt/NhcSFuAWUeI85QTXPZQTLQNVBq3/MhV1qcqzvFuVv9FyUCYYhyEQpAtfPtmt7WwDwQuW9AjF5TvoZUckYFvY8vXY5dxvYEjycqcRghlKNREuV7CQlw7VocfBh0nBeoFcEu3qBzQxV+FnHkG4YsOXzqhS4D82HqIPY1YTudnziNSEDbQBdJ8rg2B07xquUDoHL+S3aVYk7XssXeLn6yNiRdupehaIa4s9+61cQJSvW3mQndIJUriZMHSvApwUFFkhqDP/FxVZOscWSYZPOEA=';
+const GIFT_BLOB='UqlnxqBmoQP9NIOzsLFKc7K9t3BxTPQoPoAnol6ltk3deWcOQ2e5xck90gU2curJXmjJ5flYP8fJdqTnKFY2cz4oS8l/kRWJRUCsywvrpXhb2SGH5VarKUqzPrzXQ/lAjLeiL019SQDDqhEkouPdTtowxfhlJMDfiFfju3tx41mzwWLxnd9etG1dfowW+9LoTxA9nvHqXCLYq/X9kBZkV0zpzM6mB0LZa5AU0lti2Xt450+SI+r7ZNc3nb0vK1kdW3xOFR54ZKBL/ZoLz2+B4U10V8WfTrq6FQSXTpa8eIKW+nLilBrlfnwxuN7cdkqgq19ni+sGh15hGMc/5LPod1aUhIQeVGm13ty63Wrk0gdXur4ayggJMT0NcSBzvbSHnkmNlHMJZevfnghzgbzD7FlfV/48KB5VhNTw+dfDzZy2F2yjNA6GtYxEdDKIqtg8dTvG8ZTU0I0ioQp4HdhZSO+CwsMuFD2/oXlS7qt/NhcSFuAWUeI85QTXPZQTLQNVBq3/MhV1qcqzvFuVv9FyUCYYhyEQpAtfPtmt7WwDwQuW9AjF5TvoZUckYFvY8vXY5dxvYEjycqcRghlKNREuV7CQlw7VocfBh0nBeoFcEu3qBzQxV+FnHkG4YsOXzqhS4D82HqIPY1YTudnziNSEDbABfZ8ncwjp7xdeMKEGGuWIaVkk4Hshrb5HnYMm3SvGFUbl84oD+6pdfpWaWXmQv9IMU46ZOXSj8/1EPKlBxlmudrdrCoOE234TdhZYebKw';
 const mul32=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
-function giftOpen(code){try{const bin=atob(GIFT_BLOB),r=mul32(cyrb53(code,1312)%4294967296),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i)^(r()*256|0);const t=JSON.parse(new TextDecoder().decode(u));return t&&t.brand?t:null}catch(e){return null}}
+const giftKey=code=>cyrb53(code,1312)%4294967296;
+function giftOpen(code){return giftOpenKey(giftKey(code))}
+function giftOpenKey(k){try{const bin=atob(GIFT_BLOB),r=mul32(k),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i)^(r()*256|0);const t=JSON.parse(new TextDecoder().decode(u));return t&&t.brand?t:null}catch(e){return null}}
 const cyrb53=(str,seed=0)=>{let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677)}
   h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0)};
 const LAT2RU={q:'й',w:'ц',e:'у',r:'к',t:'е',y:'н',u:'г',i:'ш',o:'щ',p:'з','[':'х',']':'ъ',a:'ф',s:'ы',d:'в',f:'а',g:'п',h:'р',j:'о',k:'л',l:'д',';':'ж',"'":'э',z:'я',x:'ч',c:'с',v:'м',b:'и',n:'т',m:'ь',',':'б','.':'ю','`':'ё'};
 // регистр, пробелы, «ё» и раскладка при вводе кода не важны
 const normCode=c=>[...String(c).trim().toLowerCase()].map(ch=>LAT2RU[ch]||ch).join('').replace(/ё/g,'е').replace(/\s+/g,'');
-let GT=null;try{GT=JSON.parse(localStorage.getItem('mcskin.d')||'null');if(!GT||typeof GT!=='object'||!GT.brand)GT=null}catch(e){GT=null}
+// на устройстве хранится не код и не тексты, а ключ расшифровки: так новые версии текстов подхватываются сами
+let GT=null,GK=0;try{const v=localStorage.getItem('mcskin.d')||'';if(/^\d+$/.test(v)){GK=+v;GT=giftOpenKey(GK)}else if(v[0]==='{'){const o=JSON.parse(v);if(o&&o.brand)GT=o}}catch(e){GT=null}
 let giftMode=!!GT;
 function applyGift(){document.body.classList.toggle('gift',giftMode);const n=$('#brandName');if(n)n.textContent=giftMode?GT.brand:'Скин-студия';
   document.title=giftMode?GT.brand:(window.Neutralino&&window.NL_PORT?'Скин-студия':'Редактор скинов Minecraft');if(giftMode&&paintColor==='#2f80d1'){paintColor='#a3263f';rampBase=paintColor;updColorUI&&updColorUI()}}
-function setGift(t){GT=t||null;giftMode=!!GT;try{GT?localStorage.setItem('mcskin.d',JSON.stringify(GT)):localStorage.removeItem('mcskin.d')}catch(e){}applyGift();renderPanel()}
+function setGift(t,k){GT=t||null;GK=GT?k||GK:0;giftMode=!!GT;try{GT&&GK?localStorage.setItem('mcskin.d',String(GK)):localStorage.removeItem('mcskin.d')}catch(e){}applyGift();renderPanel()}
 function openCode(){openModal(giftMode?GT.title:'Ввести код','');const b=$('#mBody');
   if(giftMode){b.appendChild(el('p',null,GT.on));const off=el('button','btn','Выключить');off.type='button';off.onclick=()=>{closeModal();const m=GT.off;setGift(null);toast(m)};b.appendChild(off);return}
   const inp=el('input','field');inp.type='password';inp.placeholder='Код';inp.autocomplete='off';inp.setAttribute('aria-label','Код');inp.style.width='100%';
   const ok=el('button','btn primary','Открыть');ok.type='button';ok.style.marginTop='10px';const msg=el('p','note','');
-  const go_=()=>{const c=normCode(inp.value),t=cyrb53(c,77)===GIFT_HASH&&giftOpen(c);if(t){closeModal();setGift(t);setTimeout(()=>toast(GT.hi,4500),80)}else{msg.textContent='Код не подошёл';inp.select()}};
+  const go_=()=>{const c=normCode(inp.value),t=cyrb53(c,77)===GIFT_HASH&&giftOpen(c);if(t){closeModal();setGift(t,giftKey(c));setTimeout(()=>toast(GT.hi,4500),80)}else{msg.textContent='Код не подошёл';inp.select()}};
   ok.onclick=go_;inp.onkeydown=e=>{if(e.key==='Enter')go_()};b.append(inp,ok,msg);setTimeout(()=>inp.focus(),30)}
 let modalOnClose=null;
 function closeModal(){$('#modal').hidden=true;$('#modal').classList.remove('dock');const f=modalOnClose;modalOnClose=null;if(f)f()}
@@ -2008,13 +2045,13 @@ const MENUS={
     {l:'Сделать объёмным',f:opVolume},{l:'Добавить тени',f:opShade},{l:'Правую руку → на левую',f:()=>opMirrorPart('rarm')},{l:'Правую ногу → на левую',f:()=>opMirrorPart('rleg')},{l:'Симметрия головы',f:()=>opSymmetry('head')}],
   view:[{l:'Простой интерфейс',ck:()=>uiSimple,f:()=>setSimple(!uiSimple)},{sep:1},{l:'Второй слой',ck:()=>$('#ovBtn').getAttribute('aria-pressed')==='true',f:toggleOv},{l:'Площадка под ногами',ck:()=>showPlat,f:togglePlat},...[['dark','тёмный'],['grey','серый'],['light','светлый'],['blue','синий'],['green','зелёный (хромакей)']].map(([k,l])=>({l:'Фон: '+l,ck:()=>stageBg===k,f:()=>setStageBg(k)})),{sep:1},...POSES.map(([v,l])=>({l:'Поза: '+l,ck:()=>pose===v,f:()=>setPose(v)})),{sep:1},
     {l:'Вид спереди',f:()=>$('#viewF').click()},{l:'Вид сзади',f:()=>$('#viewB').click()},{l:'Сбросить камеру',f:resetView},{sep:1},{l:'Показать все части',f:()=>{hiddenParts.clear();applyVisibility();renderOutliner()}}],
-  help:[{l:'Ввести код…',f:openCode},{sep:1},{l:'Тур по интерфейсу',f:()=>tourShow(0)},{l:'Как поставить скин в игру',f:()=>goMode('export')},{l:'Горячие клавиши',f:()=>openModal('Горячие клавиши','<table>'+KEYS.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')+'</table>')}]
+  help:[{l:'Ввести код…',f:openCode},{l:'Проверить обновления…',f:()=>checkUpdate(true),show:()=>!!NAT},{sep:1},{l:'Тур по интерфейсу',f:()=>tourShow(0)},{l:'Как поставить скин в игру',f:()=>goMode('export')},{l:'Горячие клавиши',f:()=>openModal('Горячие клавиши','<table>'+KEYS.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')+'</table>')}]
 };
 let openM=null;
 function closeMenu(){const d=$('#menuDrop');if(d)d.hidden=true;document.querySelectorAll('.mb.open').forEach(b=>b.classList.remove('open'));openM=null}
 function openMenu(btn){
   const d=$('#menuDrop'),items=MENUS[btn.dataset.m];d.innerHTML='';closeMenu();
-  items.forEach(it=>{if(it.sep){d.appendChild(el('div','msep'));return}
+  items.forEach(it=>{if(it.show&&!it.show())return;if(it.sep){d.appendChild(el('div','msep'));return}
     const b=el('button','mi');b.type='button';b.setAttribute('role','menuitem');b.append(el('span','ck',it.ck?(it.ck()?'✓':''):''),el('span',null,it.l));if(it.k)b.appendChild(el('span','k',it.k));
     if(it.dis&&it.dis())b.disabled=true;b.onclick=()=>{closeMenu();it.f()};d.appendChild(b)});
   const r=btn.getBoundingClientRect();d.style.left=r.left+'px';d.style.top=(r.bottom+2)+'px';d.hidden=false;btn.classList.add('open');openM=btn.dataset.m;
@@ -2071,7 +2108,19 @@ async function natSaveUI(fn,blob,okMsg){// true/false, как и обычное 
   try{const p=await natSave(fn,blob);if(!p){toast('Сохранение отменено');return false}
     toastAction(okMsg,'Показать в папке',()=>natShow(p));return true}
   catch(e){toast('Не получилось сохранить файл: '+((e&&e.message)||'нет доступа к папке'));return false}}
+/* обновления программы: на сайте лежит version.json с номером свежей версии. Скачивание — только со страницы релизов этого проекта */
+const UPD_URL='https://enotsbeye.github.io/skin-studio/version.json',REL_OK=/^https:\/\/github\.com\/Enotsbeye\/skin-studio\//;
+const verCmp=(a,b)=>{const x=String(a).split('.').map(n=>parseInt(n)||0),y=String(b).split('.').map(n=>parseInt(n)||0);for(let i=0;i<3;i++){if((x[i]||0)!==(y[i]||0))return (x[i]||0)-(y[i]||0)}return 0};
+async function checkUpdate(manual){if(!NAT)return;const mine=window.NL_APPVERSION||'0.0.0';
+  try{const r=await fetch(UPD_URL+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;const v=await r.json();
+    const url=REL_OK.test(v.url||'')?v.url:'https://github.com/Enotsbeye/skin-studio/releases/latest';
+    if(v.version&&verCmp(v.version,mine)>0){let seen='';try{seen=localStorage.getItem('mcskin.upd')||''}catch(e){}
+      if(manual||seen!==v.version){try{localStorage.setItem('mcskin.upd',v.version)}catch(e){}
+        toastAction(`Вышла новая версия ${v.version} (у тебя ${mine})${v.notes?': '+v.notes:''}`,'Скачать',()=>NAT.os.open(url))}}
+    else if(manual)toast(`У тебя последняя версия — ${mine}`)}
+  catch(e){if(manual)toast('Не получилось проверить обновления — нет интернета?')}}
 if(NAT){
+  setTimeout(()=>checkUpdate(false),4000);
   document.addEventListener('contextmenu',e=>{if(!(e.target.closest&&e.target.closest('input,textarea')))e.preventDefault()});
   const tt=document.querySelector('title');const syncTitle=()=>{try{NAT.window.setTitle(document.title)}catch(e){}};
   if(tt)new MutationObserver(syncTitle).observe(tt,{childList:true,characterData:true,subtree:true});setTimeout(syncTitle,0);
@@ -2164,7 +2213,7 @@ $('#rotL').onclick=()=>{targetYaw=(targetYaw??yaw)-45};
 $('#rotR').onclick=()=>{targetYaw=(targetYaw??yaw)+45};
 $('#viewF').onclick=()=>{targetYaw=Math.round(yaw/360)*360};
 $('#viewB').onclick=()=>{targetYaw=Math.round((yaw-180)/360)*360+180};
-$('#ovBtn').onclick=e=>{const on=e.currentTarget.getAttribute('aria-pressed')!=='true';e.currentTarget.setAttribute('aria-pressed',on);$('#model').classList.toggle('flat',!on)};
+$('#ovBtn').onclick=toggleOv;try{if(localStorage.getItem('mcskin.ov')==='0'){$('#ovBtn').setAttribute('aria-pressed','false');$('#model').classList.add('flat')}}catch(e){}
 {const ps=$('#poseSel');POSES.forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;ps.appendChild(o)});ps.onchange=()=>setPose(ps.value)}
 $('#dlBtn').onclick=downloadSkin;
 document.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('input,textarea'))return;const k=(e.code&&e.code.startsWith('Key'))?e.code.slice(3).toLowerCase():e.key.toLowerCase();

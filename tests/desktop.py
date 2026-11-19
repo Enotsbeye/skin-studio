@@ -67,6 +67,13 @@ try:
         r = pg2.evaluate("()=>[!!document.querySelector('#stage'), !!NAT, document.body.innerText.includes('NE_CL'), typeof applyTemplate]")
         res.append(('если связь с системой не поднялась — страница цела, работает как обычно', r == [True, False, False, 'function'], r))
         pg2.close()
+        r = pg.evaluate("""async()=>{const of=window.fetch;const answer=v=>window.fetch=async()=>({ok:true,json:async()=>v});
+          answer({version:'9.9.9',url:'https://evil.example/x',notes:'тест'});let opened=null;NAT.os.open=u=>{opened=u;return Promise.resolve()};
+          await checkUpdate(true);const t1=document.querySelector('#toast').textContent;document.querySelector('#toast button').click();
+          answer({version:NL_APPVERSION});await checkUpdate(true);const t2=document.querySelector('#toast').textContent;
+          window.fetch=async()=>{throw new Error('offline')};await checkUpdate(true);const t3=document.querySelector('#toast').textContent;window.fetch=of;
+          return [NL_APPVERSION,t1.includes('9.9.9')&&t1.includes('Скачать'),opened,t2.includes('последняя'),t3.includes('Не получилось')]}""")
+        res.append(('проверка обновлений: новая версия, ссылка только на релизы проекта, «последняя», без интернета', r[1] and r[2]=='https://github.com/Enotsbeye/skin-studio/releases/latest' and r[3] and r[4], r))
         res.append(('нет ошибок страницы', not errs, errs[:3]))
         b.close()
 finally:

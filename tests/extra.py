@@ -59,12 +59,14 @@ with sync_playwright() as p:
       strokeStart([20,22],{button:0});strokeMove([23,22],true);strokeEnd();const row=[20,21,22,23].map(x=>curPx(x,22).slice(0,3).join());tool='brush';return row}""")
     res.append(('сетка чередует основной и второй цвет',r==['255,0,0','0,0,255','255,0,0','0,0,255'],r))
     pg.evaluate("()=>{applyTemplate(60);go(0)}");pg.wait_for_timeout(2900);bx=pg.locator('.tplt').nth(4).bounding_box()
-    pg.mouse.move(bx['x']+40,bx['y']+40);pg.wait_for_timeout(450);on=pg.evaluate("()=>[tplPrev,builtModel,state.model,JSON.parse(localStorage.getItem('mcskin.state.v1')).hair===state.hair]")
-    pg.mouse.move(900,500);pg.wait_for_timeout(350);off=pg.evaluate("()=>[tplPrev,builtModel===state.model]")
-    res.append(('примерка шаблона при наведении и возврат',on[0]==4 and on[1]!=on[2] and on[3] and off==[-1,True],[on,off]))
-    pg.evaluate("()=>{applyTemplate(56);go(CATS.findIndex(c=>c.id==='hair'))}");pg.wait_for_timeout(2900);bx=pg.locator('.opt').nth(17).bounding_box()
-    pg.mouse.move(bx['x']+30,bx['y']+30);pg.wait_for_timeout(450);on=pg.evaluate("()=>[tplPrev>=1000,state.hair]");pg.mouse.move(1000,500);pg.wait_for_timeout(300)
-    res.append(('примерка причёски при наведении, без изменения персонажа',on==[True,'shaggy'] and pg.evaluate("()=>tplPrev")==-1,on))
+    h0=pg.evaluate("()=>[state.hair,faces.map(f=>f.sig).join()]")
+    pg.mouse.move(bx['x']+40,bx['y']+40);pg.wait_for_timeout(450);h1=pg.evaluate("()=>[state.hair,faces.map(f=>f.sig).join(),tplPrev]")
+    pg.mouse.click(bx['x']+40,bx['y']+40);pg.wait_for_timeout(300);h2=pg.evaluate("()=>state.hair===TEMPLATES[4].s.hair")
+    res.append(('шаблон: наведение ничего не меняет, клик применяет',h1[:2]==h0 and h1[2]==-1 and h2,[h0,h1,h2]))
+    pg.evaluate("()=>{applyTemplate(56);go(CATS.findIndex(c=>c.id==='hair'))}");pg.wait_for_timeout(1500);bx=pg.locator('.opt').nth(17).bounding_box()
+    pg.mouse.move(bx['x']+30,bx['y']+30);pg.wait_for_timeout(450);on=pg.evaluate("()=>[tplPrev,state.hair]")
+    pg.mouse.click(bx['x']+30,bx['y']+30);pg.wait_for_timeout(300);after=pg.evaluate("()=>state.hair")
+    res.append(('причёска: наведение без примерки, клик меняет',on==[-1,TEMPLATES_HAIR56] if False else (on[0]==-1 and on[1]!=after),[on,after]))
     r=pg.evaluate("""()=>{applyTemplate(12);goMode('paint');const before=Array.from(lastFinal).join(),n0=L.length;openAdjust();
       const rg=document.querySelectorAll('.adjrow input')[0];rg.value=90;rg.dispatchEvent(new Event('input'));const changed=Array.from(lastFinal).join()!==before;
       closeModal();const back=Array.from(lastFinal).join()===before&&L.length===n0;
@@ -89,10 +91,31 @@ with sync_playwright() as p:
       setGift(null);return [bad,good,hidden,document.body.classList.contains('gift')]}""",code)
     res.append(('особый режим: чужой код не подходит'+('; свой включает, тексты и код не видны в странице, выключается' if code else ' (GIFT_CODE не задан — включение не проверялось)'),
                 r==[False,True,True,False] if code else r[0] is False,r))
+    if code:
+        pg.evaluate("(c)=>{openCode();const i=document.querySelector('#mBody input');i.value=c;i.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'}))}",code)
+        pg.reload();pg.wait_for_timeout(700);r=pg.evaluate("()=>[giftMode,!!(GT&&GT.brand),/^\\d+$/.test(localStorage.getItem('mcskin.d')||'')]")
+        res.append(('особый режим держится после перезапуска (на устройстве лежит только ключ)',r==[True,True,True],r));pg.evaluate("()=>setGift(null)")
     pg.evaluate("()=>localStorage.setItem('mcskin.d','1')")
     pg.reload();pg.wait_for_timeout(700)
     r=pg.evaluate("()=>[giftMode,document.body.classList.contains('gift'),localStorage.getItem('mcskin.d')]");pg.evaluate("()=>localStorage.removeItem('mcskin.d')")
     res.append(('старая метка «1» без кода режим не включает',r[0] is False and r[1] is False,r))
+    r=pg.evaluate("""()=>{setSimple(true);const vis=getComputedStyle($('#ovBtn')).display!=='none';$('#ovBtn').click();const hid=$('#model').classList.contains('flat');
+      setSimple(false);setSimple(true);goMode('paint');layer3d='auto';applyPaintMode();applyTemplate(7);go(0);goMode('paint');return [vis,hid,$('#model').classList.contains('flat'),$('#ovBtn').getAttribute('aria-pressed')]}""")
+    pg.reload();pg.wait_for_timeout(700);r2=pg.evaluate("()=>[$('#model').classList.contains('flat'),$('#ovBtn').getAttribute('aria-pressed')]");pg.evaluate("()=>setOv(true)")
+    res.append(('2-й слой: кнопка видна в простом режиме, скрытый слой сам не включается и помнится после перезапуска',r==[True,True,True,'false'] and r2==[True,'false'],[r,r2]))
+    r=pg.evaluate("""async()=>{applyTemplate(20);goMode('paint');layer3d='auto';await new Promise(r=>setTimeout(r,200));const s0=faces.map(f=>f.sig);
+      pushHist('');setPx(12,12,[255,0,255],255);syncE();refreshSkin();const s1=faces.map(f=>f.sig);const changed=s1.filter((v,i)=>v!==s0[i]).length;
+      const f=faces.find(f=>{const t=f.el._tex;return t&&!f.ov&&12>=t[0]&&12<t[0]+t[2]&&12>=t[1]&&12<t[1]+t[3]});
+      const img=new Image();img.src=f.el.style.backgroundImage.slice(5,-2);await img.decode();const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const x=c.getContext('2d');x.drawImage(img,0,0);
+      const t=f.el._tex,k=SHADE_LO+(SHADE_HI-SHADE_LO)*f.lv/(SHADE_N-1),got=[...x.getImageData(12-t[0],12-t[1],1,1).data],want=[255*k,0,255*k].map(v=>Math.round(Math.min(255,v)));
+      showBefore(true);const sb=f.sig;showBefore(false);const sa=f.sig;undo();
+      return [changed,Math.abs(got[0]-want[0])<=2&&got[1]<=2&&Math.abs(got[2]-want[2])<=2,sb!==s1[faces.indexOf(f)],sa===s1[faces.indexOf(f)],[got,want]]}""")
+    res.append(('3D: мазок перерисовывает только свою грань, цвет и свет верные, «До/после» работает',r[0]==1 and r[1] and r[2] and r[3],r))
+    r=pg.evaluate("()=>[!!$('#platModel').querySelector('.platbox'),!$('#model').querySelector('.platbox'),[...document.querySelectorAll('#model .face')].every(e=>!e.style.filter)]")
+    res.append(('подставка в своём 3D-слое, у граней нет CSS-фильтров',r==[True,True,True],r))
+    r=pg.evaluate("""()=>{let bad=[];for(let t=0;t<100;t+=3){const st=Object.assign(tplState(t),{figure:'gendermod',hair:'bald',beard:'none'});const px=paint(st);let n=0;
+      for(let y=34;y<44;y++)for(let x=17;x<31;x++)if(px[(y*64+x)*4+3])n++;if(n)bad.push(TEMPLATES[t].n+':'+n)}return bad}""")
+    res.append(('Female Gender Mod: на груди нет висящих кусков второго слоя (без волос и бороды)',not r,r[:5]))
     res.append(('нет ошибок',not errs))
     pg2=b.new_page();e2=[];pg2.on('pageerror',lambda e:e2.append(str(e)))
     pg2.add_init_script("Storage.prototype.setItem=function(){throw new Error('QuotaExceeded')}")
