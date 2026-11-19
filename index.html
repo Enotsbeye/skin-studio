@@ -510,9 +510,12 @@ const TPL_SRC=[
   ['b','#e8e8e8','#1a1a1d','#f2f2f2','#2b2b2e','#1a1a1d','#2b2b2e','#d63b3b'],['c','#1d1a19','#8e1b2a','#1a1a1d','#1a1a1d','#8e1b2a','#2b2b2e','#7a4a26',{hair:'longbangs'}]]]
 ];
 const LONG_HAIR=['long','longbangs','wavy','verylong','wavywaist','knee','kneebangs','longside','longpony','bangslong','braid','twobraids'];
+function muteEye(h){const c=parseInt(h.slice(1),16),r=c>>16&255,g=c>>8&255,b=c&255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/510;
+  // насыщенность ×0.6, слишком светлые — чуть темнее; серые и тёмные не трогаем
+  if(mx-mn<40)return h;const m=(r+g+b)/3,k=.6,f=l>.55?.9:1,cl=v=>Math.max(0,Math.min(255,Math.round((m+(v-m)*k)*f)));return '#'+[r,g,b].map(v=>cl(v).toString(16).padStart(2,'0')).join('')}
 const TEMPLATES=[];TPL_SRC.forEach(([name,g,base,vars])=>vars.forEach((v,i)=>{const [sk,hc,tc,tc2,bc,shc,ac,ec,over]=v;
   const t=Object.assign({},g==='f'?F0:M0,{cheeks:'none',mouth:'smile',print:'none',topPattern:'none',bottomPattern:'none',hairDye:'none',acc:[]},base,
-    {skin:SK[sk]||sk,hairColor:hc,topColor:tc,topColor2:tc2,bottomColor:bc,bottomColor2:tc2,shoesColor:shc,accColor:ac,eyeColor:ec,eyeColor2:ec},over||{});
+    {skin:SK[sk]||sk,hairColor:hc,topColor:tc,topColor2:tc2,bottomColor:bc,bottomColor2:tc2,shoesColor:shc,accColor:ac,eyeColor:muteEye(ec),eyeColor2:muteEye(ec)},over||{});
   TEMPLATES.push({n:name+' '+(i+1),g,s:t})}));
 
 const CATS=[
@@ -605,11 +608,11 @@ function drawFace(s,P){
   // рот — тёмный тон кожи с лёгким розовым, а не тёмно-красный; брови заметно темнее волос (так советуют скиноделы)
   const mc=mix(sk,[140,70,72],.45),teeth=[240,238,230],red=[180,30,40];
   const brow=s.hair==='bald'?shade(sk,.62):shade(hc,.62);
-  const soft=s.eyes==='soft'||s.eyes==='softbig',my=soft?1:0;
+  const soft=s.eyes==='soft'||s.eyes==='softbig',my=soft?1:0,lash=mix(dk,shade(s.hair==='bald'?sk:hc,.45),.3);
   if(!soft){F(H,3,5,shade(sk,.88),.02);F(H,4,5,shade(sk,.88),.02)}
   const E=(x,y,c)=>F(H,x,y,c,0),M=(x,y,c)=>F(H,7-x,y,c,0),both=(x,y,c)=>{E(x,y,c);M(x,y,c)};
   switch(s.cheeks){
-    case 'blush':{const c=mix(sk,[235,120,130],.32);if(soft){F(H,0,6,c,0);F(H,7,6,c,0)}else{const y=s.eyes==='anime'?6:5;F(H,1,y,c,0);F(H,6,y,c,0)}break}
+    case 'blush':{const c=mix(sk,[232,128,138],.17);if(soft){F(H,0,6,c,0);F(H,7,6,c,0)}else{const y=s.eyes==='anime'?6:5;F(H,1,y,c,0);F(H,6,y,c,0)}break}
     case 'freckles':pts(H,soft?[[1,7],[6,7],[0,6],[7,6]]:[[1,5],[2,5],[5,5],[6,5],[2,6],[5,6]],shade(sk,.78),.04);break;
     case 'scar':pts(H,[[6,2],[5,3],[6,5],[5,6]],mix(sk,[150,60,60],.5),0);break;
     case 'warpaint':both(0,5,red);both(1,5,red);both(2,5,red);F(H,3,2,red,0);F(H,4,2,red,0);break;
@@ -623,14 +626,14 @@ function drawFace(s,P){
   const bearded=['full','long','goatee'].includes(s.beard);
   /* trend eyes sit low, so only row 7 is left for the mouth: one-row versions of every mouth */
   if(soft){const lt=mix(sk,mc,.5),dkm=[60,22,26],W=(x,c)=>F(H,x,7,c,.02);
-    switch(s.mouth){case 'tiny':case 'neutral':W(3,mix(sk,mc,.6));W(4,mix(sk,mc,.6));break;case 'smile':W(2,lt);W(3,mc);W(4,mc);W(5,lt);break;
+    switch(s.mouth){case 'tiny':case 'neutral':W(3,mix(sk,mc,.4));W(4,mix(sk,mc,.4));break;case 'smile':W(2,lt);W(3,mc);W(4,mc);W(5,lt);break;
       case 'grin':W(2,mc);W(3,teeth);W(4,teeth);W(5,mc);break;case 'open':case 'surprised':W(3,dkm);W(4,dkm);break;case 'smirk':W(3,mc);W(4,mc);W(5,mc);break;
       case 'sad':W(3,shade(mc,.85));W(4,shade(mc,.85));break;case 'tongue':W(3,mc);W(4,[220,90,110]);break;case 'fangs':W(2,teeth);W(3,mc);W(4,mc);W(5,teeth);break;
-      case 'lips':W(3,[205,75,95]);W(4,[205,75,95]);break;case 'catmouth':W(2,mc);W(3,lt);W(4,lt);W(5,mc);break}}
+      case 'lips':W(3,mix(sk,[185,85,100],.5));W(4,mix(sk,[185,85,100],.5));break;case 'catmouth':W(2,mc);W(3,lt);W(4,lt);W(5,mc);break}}
   else{const H0=H,_F=F;{const H={u:H0.u,v:H0.v,w:8,h:8,d:8};
   const F=(p,x,y,c,n)=>{if(y+my<=7)_F(p,x,y+my,c,n)},Fr=(p,x,y,w,h,c,n)=>{for(let j=0;j<h;j++)for(let i=0;i<w;i++)F(p,x+i,y+j,c,n)},pts=(p,l,c,n)=>l.forEach(([x,y])=>F(p,x,y,c,n));
   switch(s.mouth){
-    case 'tiny':pts(H,[[3,6],[4,6]],mix(sk,mc,.6),.02);break;
+    case 'tiny':pts(H,[[3,6],[4,6]],mix(sk,mc,.4),.02);break;
     case 'smile':if(bearded)Fr(H,2,6,4,1,mc,.03);else pts(H,[[2,6],[5,6],[3,7],[4,7]],mc,.03);break;
     case 'grin':F(H,1,6,mc,0);F(H,6,6,mc,0);Fr(H,2,6,4,1,teeth,.02);Fr(H,2,7,4,1,mc,.03);break;
     case 'neutral':pts(H,[[3,6],[4,6]],mc,.03);break;
@@ -640,29 +643,29 @@ function drawFace(s,P){
     case 'surprised':pts(H,[[3,6],[4,6],[3,7],[4,7]],[60,22,26],.03);break;
     case 'tongue':pts(H,[[2,6],[3,6],[4,6],[5,6]],mc,.03);F(H,4,7,[220,90,110],0);break;
     case 'fangs':Fr(H,2,6,4,1,mc,.03);F(H,2,7,teeth,0);F(H,5,7,teeth,0);break;
-    case 'lips':pts(H,[[2,6],[5,6]],[170,55,75],0);pts(H,[[3,6],[4,6]],[205,75,95],0);break;
+    case 'lips':pts(H,[[3,6],[4,6]],mix(sk,[185,85,100],.5),0);break;
     case 'catmouth':pts(H,[[1,6],[2,7],[3,6],[4,6],[5,7],[6,6]],mc,.03);break;
   }}}
   if(s.beard==='mustache'){Fr(H,2,6,4,1,hc,.1);F(H,1,7,hc,.1);F(H,6,7,hc,.1)}
   switch(s.eyes){
-    case 'softbig':both(1,4,dk);both(2,4,dk);both(1,5,shade(ir,.55));both(2,5,wh);both(1,6,ir);both(2,6,mix(ir,wh,.3));break;
-    case 'soft':both(2,4,dk);both(1,5,shade(wh,.78));both(2,5,shade(ir,.55));both(1,6,wh);both(2,6,ir);break;
+    case 'softbig':both(1,4,lash);both(2,4,lash);both(1,5,shade(ir,.62));both(2,5,ir);both(1,6,ir);both(2,6,mix(ir,wh,.38));break;
+    case 'soft':both(1,4,lash);both(2,4,lash);both(1,5,shade(ir,.66));both(2,5,mix(ir,wh,.18));break;
     // 2×2 глаза, верхний ряд притемнён — стандарт популярных скинов
-    case 'classic':both(1,4,shade(wh,.8));both(2,4,shade(ir,.68));both(1,5,wh);both(2,5,ir);break;
+    case 'classic':both(1,4,lash);both(2,4,lash);both(1,5,mix(wh,sk,.22));both(2,5,ir);break;
     case 'big':both(1,3,wh);both(2,3,wh);both(1,4,ir);both(2,4,dk);break;
     case 'anime':both(1,3,dk);both(2,3,dk);both(1,4,ir);both(2,4,wh);both(1,5,shade(ir,.6));both(2,5,ir);break;
     case 'narrow':both(1,3,shade(sk,.84));both(2,3,shade(sk,.84));both(1,4,ir);both(2,4,dk);break;
     case 'sleepy':{const ln=mix(dk,sk,.25);both(1,4,ln);both(2,4,ln);break}
-    case 'wink':E(1,4,shade(wh,.8));E(2,4,shade(ir,.68));E(1,5,wh);E(2,5,ir);M(1,5,dk);M(2,5,dk);break;
+    case 'wink':E(1,4,lash);E(2,4,lash);E(1,5,mix(wh,sk,.22));E(2,5,ir);M(1,5,lash);M(2,5,lash);break;
     case 'cat':both(1,3,ir);both(2,3,dk);both(1,4,ir);both(2,4,dk);break;
     case 'glow':{const g=mix(ir,[255,255,255],.35);both(1,4,g);both(2,4,g);both(1,3,mix(sk,ir,.35));both(2,3,mix(sk,ir,.35));break}
     case 'dots':both(2,4,dk);break;
     case 'tired':both(1,4,wh);both(2,4,ir);both(1,5,shade(sk,.82));both(2,5,shade(sk,.82));break;
-    case 'hetero':E(1,4,shade(wh,.8));E(2,4,shade(ir,.68));E(1,5,wh);E(2,5,ir);M(1,4,shade(wh,.8));M(2,4,shade(ir2,.68));M(1,5,wh);M(2,5,ir2);break;
+    case 'hetero':both(1,4,lash);both(2,4,lash);E(1,5,mix(wh,sk,.22));E(2,5,ir);M(1,5,mix(wh,sk,.22));M(2,5,ir2);break;
   }
   // у девушек ресница выходит на 1 px за глаз
-  if(s.figure&&s.figure!=='male'&&['classic','soft','softbig','hetero','wink'].includes(s.eyes)){E(0,4,dk);if(s.eyes!=='wink')M(0,4,dk)}
-  const br=(s.eyes==='big'||s.eyes==='anime'||s.eyes==='cat'||s.eyes==='glow'||s.eyes==='sleepy')?2:3;
+  if(s.figure&&s.figure!=='male'&&['classic','soft','softbig','hetero','wink'].includes(s.eyes)){E(0,4,lash);if(s.eyes!=='wink')M(0,4,lash)}
+  const br=(s.eyes==='big'||s.eyes==='anime'||s.eyes==='cat'||s.eyes==='glow'||s.eyes==='sleepy'||['classic','hetero','wink'].includes(s.eyes))?2:3;
   if(!soft)switch(s.brows){
     case 'normal':both(1,br,brow);both(2,br,brow);break;
     case 'thick':both(0,br,brow);both(1,br,brow);both(2,br,brow);break;
@@ -2149,7 +2152,7 @@ async function natSaveUI(fn,blob,okMsg){// true/false, как и обычное 
     toastAction(okMsg,'Показать в папке',()=>natShow(p));return true}
   catch(e){toast('Не получилось сохранить файл: '+((e&&e.message)||'нет доступа к папке'));return false}}
 /* обновления программы: на сайте лежит version.json с номером свежей версии. Скачивание — только со страницы релизов этого проекта */
-const APP_VERSION='1.3.0';// единственное место с номером версии: отсюда же его берёт сборка программы
+const APP_VERSION='1.3.1';// единственное место с номером версии: отсюда же его берёт сборка программы
 const UPD_URL='https://enotsbeye.github.io/skin-studio/version.json',REL_OK=/^https:\/\/github\.com\/Enotsbeye\/skin-studio\//;
 // ссылка «Поддержать» берётся с сайта (version.json → donate) — её можно поменять без выпуска новой версии; только известные сервисы
 const DONATE_OK=/^https:\/\/(ko-fi\.com|boosty\.to|www\.buymeacoffee\.com|buymeacoffee\.com|paypal\.me|www\.paypal\.me|github\.com\/sponsors|patreon\.com|www\.patreon\.com)\//;
