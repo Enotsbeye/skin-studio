@@ -648,7 +648,7 @@ function drawFace(s,P){
   }}}
   if(s.beard==='mustache'){Fr(H,2,6,4,1,hc,.1);F(H,1,7,hc,.1);F(H,6,7,hc,.1)}
   switch(s.eyes){
-    case 'softbig':both(1,4,lash);both(2,4,lash);both(1,5,shade(ir,.62));both(2,5,ir);both(1,6,ir);both(2,6,mix(ir,wh,.38));break;
+    case 'softbig':both(1,4,lash);both(2,4,lash);both(1,5,shade(ir,.55));both(2,5,mix(ir,wh,.5));both(1,6,ir);both(2,6,mix(ir,wh,.3));break;
     case 'soft':both(1,4,lash);both(2,4,lash);both(1,5,shade(ir,.66));both(2,5,mix(ir,wh,.18));break;
     // 2×2 глаза, верхний ряд притемнён — стандарт популярных скинов
     case 'classic':both(1,4,lash);both(2,4,lash);both(1,5,mix(wh,sk,.22));both(2,5,ir);break;
@@ -666,8 +666,11 @@ function drawFace(s,P){
   // у девушек ресница выходит на 1 px за глаз
   if(s.figure&&s.figure!=='male'&&['classic','soft','softbig','hetero','wink'].includes(s.eyes)){E(0,4,lash);if(s.eyes!=='wink')M(0,4,lash)}
   const br=(s.eyes==='big'||s.eyes==='anime'||s.eyes==='cat'||s.eyes==='glow'||s.eyes==='sleepy'||['classic','hetero','wink'].includes(s.eyes))?2:3;
-  if(!soft)switch(s.brows){
-    case 'normal':both(1,br,brow);both(2,br,brow);break;
+  // у девушек брови мягче: тон волос, смешанный с кожей (а не тёмная полоса над ресницами)
+  const fem=s.figure&&s.figure!=='male';const brow2=fem?mix(brow,sk,.3):brow,browI=fem?mix(brow,sk,.48):brow;
+  const sweep=fem&&!HAIR_FRONT[s.hair]&&PULLED.includes(s.hair);   // косая чёлка закрывает брови — не рисуем их, иначе торчат из-под прядей
+  if(!soft&&!sweep)switch(s.brows){
+    case 'normal':both(1,br,brow2);both(2,br,browI);break;
     case 'thick':both(0,br,brow);both(1,br,brow);both(2,br,brow);break;
     case 'angry':both(1,br-1,brow);both(2,br,brow);break;
     case 'raised':both(1,br-1,brow);both(2,br-1,brow);break;
@@ -985,9 +988,11 @@ const HAIR_FRONT={
   bangslong:[[8,3,3,3,3,3,3,8],[8,4,4,3,4,4,4,8]],bangs:[[6,3,3,3,3,3,3,6],[6,4,4,3,4,4,4,6]],
   bob:[[7,3,2,2,2,2,3,7],[7,3,3,2,2,3,3,7]],curtain:[[5,2,1,1,1,1,2,5],[6,3,2,1,1,2,3,6]],
   side:[[3,2,2,2,1,1,1,1],[3,3,3,3,2,2,1,1]],twintails:[[4,2,2,2,2,2,2,4],[4,3,3,2,3,3,3,4]],spacebuns:[[3,2,2,2,2,2,2,3],[3,3,2,3,3,2,3,3]],
+  sweep:[[4,3,3,3,2,2,1,3],[5,4,3,3,3,2,2,3]],
   short:[[2,1,1,1,1,1,1,2],[2,2,1,2,1,2,1,2]],quiff:'short',emo:[[6,5,5,3,2,1,1,1],[6,6,6,5,3,2,1,1]],shaggy:[[5,2,1,2,1,2,1,5],[5,3,2,3,2,3,2,5]]};
 const HAIR_PART=['long','verylong','wavy','wavywaist','knee','longbangs','kneebangs','bangslong','bob','curtain','longside','twobraids','twintails','bangs'];
-function hairFront(s,P,snap,M){let pr=HAIR_FRONT[s.hair];if(typeof pr==='string')pr=HAIR_FRONT[pr];if(!pr)return;
+const PULLED=['ponytail','longpony','highpony','braid','twobraids','bun'];
+function hairFront(s,P,snap,M){let pr=HAIR_FRONT[s.hair];if(!pr&&PULLED.includes(s.hair)&&s.figure&&s.figure!=='male')pr='sweep';if(typeof pr==='string')pr=HAIR_FRONT[pr];if(!pr)return;
   const hc=rgb(s.hairColor),soft=soft0(s),lim=soft?4:eyeRows(s)[0],emo=s.hair==='emo';
   const eyeCol=lx=>lx===1||lx===2||lx===5||lx===6;
   for(let lx=0;lx<8;lx++){const cap=(lx>0&&lx<7&&!(emo&&lx<3))?(soft&&eyeCol(lx)?lim-1:lim):8,db=Math.min(pr[0][lx],cap),dov=Math.min(pr[1][lx],cap);
@@ -1116,7 +1121,7 @@ function formPass(s,M,hm,hm2){if(!HUESHIFT)return;const K=SHK;if(!K)return;const
       if((k==='larm'||k==='lsleeve'||k==='lleg'||k==='lpants')&&f===2)m*=.88;
       if((k==='body'||k==='jacket')&&(f===2||f===3))m*=.9;
       if((k==='rarm'||k==='larm'||k==='rsleeve'||k==='lsleeve')&&ly===0)m*=.93}
-    if(k==='head'&&side&&!hm[i]){const up=i-64;if(ly>0&&(hm[up]||hm[up+32]))m*=.9;   // тень под чёлкой
+    if(k==='head'&&side&&!hm[i]){const up=i-64;if(ly>0&&(hm[up]||hm[up+32]))m*=.88;else if(ly>1&&(hm[up-64]||hm[up-32]))m*=.96;   // тень под чёлкой и полутень ниже
       if(f===0){const lx=M.lx[i],cx=Math.min(lx,7-lx),cy=7-ly;if(cx+cy===0)m*=.86;else if(cx+cy===1)m*=.92;else if(cx===0)m*=.96;else if(cy===0)m*=.97}}
     if(m!==1)hsPx(j,ff(m))}}
 function paint(s){
@@ -2161,7 +2166,7 @@ async function natSaveUI(fn,blob,okMsg){// true/false, как и обычное 
     toastAction(okMsg,'Показать в папке',()=>natShow(p));return true}
   catch(e){toast('Не получилось сохранить файл: '+((e&&e.message)||'нет доступа к папке'));return false}}
 /* обновления программы: на сайте лежит version.json с номером свежей версии. Скачивание — только со страницы релизов этого проекта */
-const APP_VERSION='1.4.0';// единственное место с номером версии: отсюда же его берёт сборка программы
+const APP_VERSION='1.4.1';// единственное место с номером версии: отсюда же его берёт сборка программы
 const UPD_URL='https://enotsbeye.github.io/skin-studio/version.json',REL_OK=/^https:\/\/github\.com\/Enotsbeye\/skin-studio\//;
 // ссылка «Поддержать» берётся с сайта (version.json → donate) — её можно поменять без выпуска новой версии; только известные сервисы
 const DONATE_OK=/^https:\/\/(ko-fi\.com|boosty\.to|www\.buymeacoffee\.com|buymeacoffee\.com|paypal\.me|www\.paypal\.me|github\.com\/sponsors|patreon\.com|www\.patreon\.com)\//;
