@@ -682,8 +682,8 @@ const br=(s.eyes==='big'||s.eyes==='anime'||s.eyes==='cat'||s.eyes==='glow'||s.e
   }
 }
 
-/* волны: тёмные просветы между прядями идут зигзагом, на гребне волны — светлый пиксель */
-const WAVE=(x,y)=>{const o=[0,0,1,1,0,0,-1,-1][((y%8)+8)%8],m=(((x-o)%3)+3)%3;return m===0?-1:(m===1&&y%4===1)?1:0};
+/* волны: тёмные просветы между прядями плавно смещаются, рядом с каждым — светлый край пряди */
+const WAVE=(x,y)=>{const o=[0,0,1,1,1,0,0,0][((y%8)+8)%8],m=(((x-o)%3)+3)%3;return m===0?-1:m===2?1:0};   // тёмный просвет + светлый край пряди рядом — волна читается, а не пятна
 function drawHair(s,P){
   const H=P.head,O=P.hat,hc=rgb(s.hairColor),sk=rgb(s.skin),n=.1,hl=shade(hc,1.12),dkh=shade(hc,.78);
   const shortBase=()=>{capT(H,hc,n);Fr(H,0,0,8,1,hc,n);F(H,0,1,hc,n);F(H,7,1,hc,n);sidesBack(H,0,3,hc,n);sideR(H,0,3,4,1,hc,n);sideL(H,4,3,4,1,hc,n);Bkr(H,0,3,8,2,hc,n)};
@@ -781,7 +781,11 @@ function drawTop(s,P){
       sl.forEach(a=>{band(a,0,4,m,.07);capT(a,shade(m,1.12),.06);band(a,3,4,shade(m,.7),.05)});break}
     case 'crop':band(Bd,0,8,tc,n);band(Bd,7,8,shade(tc,.85),n);capT(Bd,tc,n);drawPrint(s,Bd);F(Bd,3,0,sk,.03);F(Bd,4,0,sk,.03);T(Bd,3,3,sk,.03);T(Bd,4,3,sk,.03);sleeves(3,tc);break;
     case 'polo':torso(tc);pts(Bd,[[1,0],[2,0],[5,0],[6,0],[2,1],[5,1]],t2,.03);F(Bd,3,0,sk,.03);F(Bd,4,0,sk,.03);F(Bd,4,1,shade(tc,.6),0);F(Bd,4,2,shade(tc,.6),0);T(Bd,3,3,sk,.03);T(Bd,4,3,sk,.03);sleeves(4,tc);band(P.rarm,3,4,t2,.03);band(P.larm,3,4,t2,.03);break;
-    case 'shirt':torso(tc);Fr(Bd,3,0,2,12,shade(tc,.93),.04);pts(Bd,[[3,2],[3,5],[3,8]],t2,0);pts(Bd,[[1,0],[2,0],[5,0],[6,0]],shade(tc,1.15),.03);F(Bd,3,0,sk,.03);F(Bd,4,0,sk,.03);sleeves(10,tc);break;
+    // рубашка: пуговицы в тон ткани, второй цвет — бант у девушек (как у школьной формы) или галстук у парней
+    case 'shirt':{torso(tc);Fr(Bd,3,0,2,12,shade(tc,.93),.04);pts(Bd,[[3,5],[3,8]],shade(tc,.8),0);pts(Bd,[[1,0],[2,0],[5,0],[6,0]],shade(tc,1.15),.03);F(Bd,3,0,sk,.03);F(Bd,4,0,sk,.03);
+      if(s.figure&&s.figure!=='male'){const d=shade(t2,.78);pts(Bd,[[2,1],[5,1]],t2,.02);pts(Bd,[[3,1],[4,1]],d,.02);pts(Bd,[[2,2],[5,2]],d,.02);F(Bd,3,2,t2,.02);F(Bd,4,3,t2,.02)}
+      else{F(Bd,3,1,shade(t2,.8),.02);F(Bd,4,1,shade(t2,.8),.02);Fr(Bd,3,2,2,4,t2,.03);F(Bd,3,6,shade(t2,.85),.02)}
+      sleeves(10,tc);break}
     case 'flannel':{const pl=(p,rows)=>{for(let y=0;y<rows;y++)for(let x=0;x<2*(p.d+p.w);x++){const a=x%4===1,b=y%4===2;S(p,x,y,a&&b?t2:a||b?mix(tc,t2,.45):tc,.05)}};
       pl(Bd,12);capT(Bd,tc,n);capB(Bd,tc,n);F(Bd,3,0,sk,.03);F(Bd,4,0,sk,.03);pts(Bd,[[3,3],[3,6],[3,9]],shade(tc,.5),0);arms.forEach(a=>{pl(a,10);capT(a,tc,n);band(a,9,10,shade(tc,.8),n)});break}
     case 'sweater':torso(tc);for(let x=0;x<24;x++){if(x%4===0)S(Bd,x,3,t2,.04);if(x%2===1)S(Bd,x,4,t2,.04);if(x%4===2)S(Bd,x,5,t2,.04)}band(Bd,0,1,shade(tc,.84),n);band(Bd,10,12,shade(tc,.84),n);
@@ -858,6 +862,8 @@ function drawShoes(s,P){
   const sc=rgb(s.shoesColor),w=[240,240,240];
   /* socks only show where the legs are bare: under long trousers only the foot is visible */
   const longB=['jeans','ripped','trousers','cargo','camo','sweats','leggings','overalls','plaidpants','greaves'].includes(s.bottom);
+  // туфли под гольфы: 2 ряда, ремешок и блик на носке — раньше была одна полоска, будто ноги без обуви
+  const shoe2=(l,c=sc)=>{band(l,10,12,c,.04);band(l,11,12,shade(c,.62),.03);F(l,1,10,mix(c,[255,255,255],.35),0);F(l,2,10,shade(c,.8),0);capB(l,shade(c,.55),.03)};
   [P.rleg,P.lleg].forEach(l=>{
     switch(s.shoes){
       case 'sneakers':band(l,10,11,sc,.06);band(l,11,12,w,.03);capB(l,w,.03);F(l,1,10,w,0);F(l,2,10,w,0);break;
@@ -868,8 +874,8 @@ function drawShoes(s,P){
       case 'rainboots':band(l,5,12,sc,.03);band(l,5,6,shade(sc,1.15),.03);band(l,11,12,shade(sc,.6),.03);for(let y=6;y<10;y++)F(l,1,y,mix(sc,[255,255,255],.35),0);capB(l,shade(sc,.6),.03);break;
       case 'formal':band(l,10,12,sc,.03);band(l,11,12,shade(sc,.6),.03);F(l,1,10,mix(sc,[255,255,255],.3),0);capB(l,shade(sc,.5),.03);break;
       case 'sandals':band(l,11,12,sc,.05);Fr(l,0,10,4,1,shade(sc,.9),.04);capB(l,sc,.05);break;
-      case 'kneesocks':if(longB){band(l,11,12,w,.03);capB(l,w,.03);break}band(l,4,12,w,.03);band(l,4,5,shade(w,.86),.03);band(l,11,12,sc,.04);capB(l,sc,.04);break;
-      case 'stripedsocks':if(longB){band(l,11,12,sc,.03);capB(l,sc,.03);break}for(let y=4;y<11;y++)band(l,y,y+1,y%2?sc:w,.03);band(l,11,12,shade(sc,.7),.04);capB(l,shade(sc,.7),.04);break;
+      case 'kneesocks':if(longB){band(l,11,12,w,.03);capB(l,w,.03);break}band(l,4,12,w,.03);band(l,4,5,shade(w,.86),.03);shoe2(l);break;
+      case 'stripedsocks':if(longB){band(l,11,12,sc,.03);capB(l,sc,.03);break}for(let y=4;y<10;y++)band(l,y,y+1,y%2?sc:w,.03);shoe2(l,[40,36,40]);break;
       case 'socks':if(longB){band(l,11,12,w,.03);capB(l,w,.03);break}band(l,8,12,w,.03);band(l,8,9,sc,.03);band(l,11,12,shade(w,.9),.03);capB(l,w,.03);break;
       case 'armored':band(l,8,12,sc,.07);band(l,8,9,shade(sc,1.2),.05);Fr(l,0,10,4,1,shade(sc,1.1),.05);capB(l,shade(sc,.6),.05);break;
     }
@@ -2177,7 +2183,7 @@ async function natSaveUI(fn,blob,okMsg){// true/false, как и обычное 
     toastAction(okMsg,'Показать в папке',()=>natShow(p));return true}
   catch(e){toast('Не получилось сохранить файл: '+((e&&e.message)||'нет доступа к папке'));return false}}
 /* обновления программы: на сайте лежит version.json с номером свежей версии. Скачивание — только со страницы релизов этого проекта */
-const APP_VERSION='1.4.3';// единственное место с номером версии: отсюда же его берёт сборка программы
+const APP_VERSION='1.4.4';// единственное место с номером версии: отсюда же его берёт сборка программы
 const UPD_URL='https://enotsbeye.github.io/skin-studio/version.json',REL_OK=/^https:\/\/github\.com\/Enotsbeye\/skin-studio\//;
 // ссылка «Поддержать» берётся с сайта (version.json → donate) — её можно поменять без выпуска новой версии; только известные сервисы
 const DONATE_OK=/^https:\/\/(ko-fi\.com|boosty\.to|www\.buymeacoffee\.com|buymeacoffee\.com|paypal\.me|www\.paypal\.me|github\.com\/sponsors|patreon\.com|www\.patreon\.com)\//;
