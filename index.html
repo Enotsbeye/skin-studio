@@ -637,12 +637,13 @@ function drawFace(s,P){
     case 'smile':if(bearded)Fr(H,2,6,4,1,mc,.03);else pts(H,[[2,6],[5,6],[3,7],[4,7]],mc,.03);break;
     case 'grin':F(H,1,6,mc,0);F(H,6,6,mc,0);Fr(H,2,6,4,1,teeth,.02);Fr(H,2,7,4,1,mc,.03);break;
     case 'neutral':pts(H,[[3,6],[4,6]],mc,.03);break;
-    case 'open':Fr(H,2,6,4,1,[60,22,26],.03);pts(H,[[3,7],[4,7]],[190,80,90],.03);break;
+    case 'open':pts(H,[[2,6],[5,6]],mc,.03);pts(H,[[3,6],[4,6]],[60,22,26],.03);pts(H,[[3,7],[4,7]],[170,70,82],.03);break;
     case 'smirk':pts(H,[[2,6],[3,6],[4,6],[5,5]],mc,.03);break;
     case 'sad':pts(H,[[3,6],[4,6],[2,7],[5,7]],mc,.03);break;
     case 'surprised':pts(H,[[3,6],[4,6],[3,7],[4,7]],[60,22,26],.03);break;
     case 'tongue':pts(H,[[2,6],[3,6],[4,6],[5,6]],mc,.03);F(H,4,7,[220,90,110],0);break;
-    case 'fangs':Fr(H,2,6,4,1,mc,.03);F(H,2,7,teeth,0);F(H,5,7,teeth,0);break;
+    // клыки висят из тёмной линии рта — со светлой линией они выглядели как две точки на подбородке
+    case 'fangs':Fr(H,2,6,4,1,mix(mc,[60,22,26],.55),.03);F(H,2,7,teeth,0);F(H,5,7,teeth,0);break;
     case 'lips':pts(H,[[3,6],[4,6]],mix(sk,[185,85,100],.5),0);break;
     case 'catmouth':pts(H,[[1,6],[2,7],[3,6],[4,6],[5,7],[6,6]],mc,.03);break;
   }}}
@@ -1029,14 +1030,14 @@ function hairLight(i,M,s,mk){const p=M.p[i],f=M.f[i],lx=M.lx[i],ly=M.ly[i],w=M.w
     else{// круглый блик: на затылке выше центра, сбоку ближе к лицу, спереди на макушке чёлки
       const cx=f===2?5:f===3?2:3.5,cy=f===0?1:2,dx=(lx-cx)/4.2,dy=(ly-cy)/4.6,dd=Math.sqrt(dx*dx+dy*dy);L+=.5-1.45*dd;
       if(f!==0&&ly===cy&&Math.abs(lx-cx)<=1.2)L+=.75;                 // яркая полоска 3 px
-      L+=(hash(lx*7+f*13+p*31,(ly/3|0)+7)-.5)*.9;                            // пучки прядей разной яркости
+      L+=(hash(lx*7+f*13+p*31,7)-.5)*.8;                                      // пряди разной яркости — по всей высоте столбца, а не пятнами
       if(f===0){if(ly>=2&&(lx===2||lx===5))L-=.55;if((lx===0||lx===7)&&ly>=3)L-=.4}
       else if(ly>=2&&(lx+f)%3===0)L-=.6;                                     // просветы между прядями
       if(f===2&&lx===0||f===3&&lx===7)L-=.35}
     const dn=i+64;if(f>=0&&f<=3&&ly<7&&!mk[dn])L-=.4}                        // кончики прядей темнее
   else{const leg=p>=8;if(leg)L-=.35;if(f>=0&&f<=3){if(!leg&&ly<=1)L-=.8;
       if(!leg){const dy=(ly-3.5)/3.2,dx=(lx-(w-1)/2)/(w/2+.5);L+=.7-1.1*Math.sqrt(dx*dx+dy*dy)}
-      L+=(hash(lx*7+p*31,(ly/4|0)+3)-.5)*.8;if(lx%3===2)L-=.6;if(lx===0||lx===w-1)L-=.35;const dn=i+64;if(dn>=4096||!mk[dn]||M.p[dn]!==p)L-=.5}}
+      L+=(hash(lx*7+p*31,(ly/6|0)+3)-.5)*.75;if(lx%3===2)L-=.6;if(lx===0||lx===w-1)L-=.35;const dn=i+64;if(dn>=4096||!mk[dn]||M.p[dn]!==p)L-=.5}}
   return L*Math.min(1.5,SHK)}
 function hairPost(mk,s,M){const hc=rgb(s.hairColor),h2=rgb(s.hairColor2||s.hairColor),dye=s.hairDye||'none',hl=Math.max(1,lumA(hc));
   const fam=[[hc,0],[shade(hc,.78),-1],[shade(hc,1.12),1]];
@@ -1129,7 +1130,12 @@ function formPass(s,M,hm,hm2){if(!HUESHIFT)return;const K=SHK;if(!K)return;const
     if(k==='head'&&side&&!hm[i]){const up=i-64;if(ly>0&&(hm[up]||hm[up+32]))m*=.88;else if(ly>1&&(hm[up-64]||hm[up-32]))m*=.96;   // тень под чёлкой и полутень ниже
       if(f===0){const lx=M.lx[i],cx=Math.min(lx,7-lx),cy=7-ly;if(cx+cy===0)m*=.86;else if(cx+cy===1)m*=.92;else if(cx===0)m*=.96;else if(cy===0)m*=.97}}
     if(m!==1)hsPx(j,ff(m))}}
-function paint(s){
+/* чёрная одежда у скиноделов — тёмно-серая с чёрными тенями: иначе на чистом чёрном не видно ни складок, ни швов */
+function liftDark(hex){if(!hex)return hex;const c=rgb(hex),l=lumA(c);if(l>=40)return hex;const d=(40-l)*.9;
+  return '#'+[c[0]+d,c[1]+d,c[2]+d*1.15].map(v=>Math.round(Math.min(255,v)).toString(16).padStart(2,'0')).join('')}
+const CLOTH_KEYS=['topColor','topColor2','bottomColor','bottomColor2','shoesColor','accColor'];
+function liftCloth(s){if(s.liftDark===false)return s;const o=Object.assign({},s);for(const k of CLOTH_KEYS)if(o[k])o[k]=liftDark(o[k]);return o}
+function paint(s){s=liftCloth(s);
   B=new Uint8ClampedArray(64*64*4);
   const P=parts(s.model==='slim'),sk=rgb(s.skin);
   ['head','body','rarm','larm','rleg','lleg'].forEach(k=>{const p=P[k];band(p,0,p.h,sk,.03);capT(p,sk,.03);capB(p,shade(sk,.92),.03)});
@@ -2171,7 +2177,7 @@ async function natSaveUI(fn,blob,okMsg){// true/false, как и обычное 
     toastAction(okMsg,'Показать в папке',()=>natShow(p));return true}
   catch(e){toast('Не получилось сохранить файл: '+((e&&e.message)||'нет доступа к папке'));return false}}
 /* обновления программы: на сайте лежит version.json с номером свежей версии. Скачивание — только со страницы релизов этого проекта */
-const APP_VERSION='1.4.2';// единственное место с номером версии: отсюда же его берёт сборка программы
+const APP_VERSION='1.4.3';// единственное место с номером версии: отсюда же его берёт сборка программы
 const UPD_URL='https://enotsbeye.github.io/skin-studio/version.json',REL_OK=/^https:\/\/github\.com\/Enotsbeye\/skin-studio\//;
 // ссылка «Поддержать» берётся с сайта (version.json → donate) — её можно поменять без выпуска новой версии; только известные сервисы
 const DONATE_OK=/^https:\/\/(ko-fi\.com|boosty\.to|www\.buymeacoffee\.com|buymeacoffee\.com|paypal\.me|www\.paypal\.me|github\.com\/sponsors|patreon\.com|www\.patreon\.com)\//;
