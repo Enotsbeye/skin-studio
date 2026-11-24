@@ -866,7 +866,8 @@ function drawShoes(s,P){
   const shoe2=(l,c=sc)=>{band(l,10,12,c,.04);band(l,11,12,shade(c,.62),.03);F(l,1,10,mix(c,[255,255,255],.35),0);F(l,2,10,shade(c,.8),0);capB(l,shade(c,.55),.03)};
   [P.rleg,P.lleg].forEach(l=>{
     switch(s.shoes){
-      case 'sneakers':band(l,10,11,sc,.06);band(l,11,12,w,.03);capB(l,w,.03);F(l,1,10,w,0);F(l,2,10,w,0);break;
+      // кроссовки в 3 ряда: тёмный задник, шнурки спереди, полоска-логотип по бокам, белая подошва
+      case 'sneakers':band(l,9,11,sc,.06);band(l,9,10,shade(sc,.78),.04);F(l,1,9,w,0);F(l,2,9,w,0);F(l,1,10,shade(w,.86),0);F(l,2,10,shade(w,.86),0);S(l,1,10,w,0);S(l,2,10,w,0);S(l,9,10,w,0);S(l,10,10,w,0);band(l,11,12,w,.03);capB(l,w,.03);break;
       case 'hightops':band(l,8,11,sc,.06);band(l,11,12,w,.03);Fr(l,0,10,4,1,w,.02);capB(l,w,.03);F(l,1,8,w,0);F(l,2,9,w,0);band(l,8,9,shade(sc,.85),.04);break;
       case 'slipons':for(let x=0;x<16;x++)S(l,x,10,(x%2)?sc:w,.02);band(l,11,12,w,.03);capB(l,w,.03);break;
       case 'boots':band(l,8,12,sc,.07);band(l,8,9,shade(sc,1.15),.05);band(l,11,12,shade(sc,.55),.04);capB(l,shade(sc,.5),.04);break;
@@ -1451,15 +1452,52 @@ function renderPNG(size,bg,O){O=O||{};const dg=Math.PI/180,Mv=M3.mul(M3.rx((O.pi
     const P0=toV(f.TL),P1=toV(v3add(f.TL,f.U)),P2=toV(v3add(f.TL,f.V)),P3=toV(v3add(v3add(f.TL,f.U),f.V)),u=v3sub(P1,P0),v=v3sub(P2,P0),nz=u[0]*v[1]-u[1]*v[0];
     if(nz<=1e-6)continue;const n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],nz],nl=Math.hypot(...n),dd=(n[0]*LIGHT[0]+n[1]*LIGHT[1]+n[2]*LIGHT[2])/nl;
     items.push({P0,u,v,r:f.r,z:(P0[2]+P1[2]+P2[2]+P3[2])/4,b:.45+.65*Math.max(0,dd)});[P0,P1,P2,P3].forEach(p=>{x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1])})}
+  if(O.measure)return [x0,x1,y0,y1];if(O.box)[x0,x1,y0,y1]=O.box;   // общая рамка для всех кадров GIF — иначе персонаж «прыгает» по размеру
   items.sort((a,b)=>a.z-b.z);
   const c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d'),sc=size*.82/Math.max(x1-x0,y1-y0),ox=size/2-(x0+x1)/2*sc,oy=size/2-(y0+y1)/2*sc;
   if(bg){x.fillStyle=bg;x.fillRect(0,0,size,size)}
-  x.save();x.fillStyle='rgba(0,0,0,.28)';x.beginPath();x.ellipse(size/2,oy+y1*sc+size*.01,size*.16,size*.035,0,0,7);x.fill();x.restore();
+  if(!O.noShadow){x.save();x.fillStyle='rgba(0,0,0,.28)';x.beginPath();x.ellipse(size/2,oy+y1*sc+size*.01,size*.16,size*.035,0,0,7);x.fill();x.restore()}
   x.imageSmoothingEnabled=false;const e=.035;
   for(const it of items){const [tx,ty,tw,th]=it.r,a=it.u[0]*sc/tw,b=it.u[1]*sc/tw,cc=it.v[0]*sc/th,d=it.v[1]*sc/th,O=[ox+it.P0[0]*sc,oy+it.P0[1]*sc];
     x.setTransform(a,b,cc,d,O[0]-a*tx-cc*ty,O[1]-b*tx-d*ty);x.filter=`brightness(${it.b.toFixed(3)})`;x.drawImage(src,tx,ty,tw,th,tx-e,ty-e,tw+2*e,th+2*e)}
   x.setTransform(1,0,0,1,0,0);x.filter='none';return c}
 let renderBg='none';const RBG={none:null,dark:'#111214',light:'#e9edf2',blue:'#2f80d1'};
+/* ---------- анимированный GIF: персонаж крутится (и идёт, если выбрана ходьба) — для Discord/Telegram ----------
+   свой кодировщик без библиотек: общая палитра на все кадры (median cut, до 255 цветов) + LZW */
+function gifPalette(frames,transp){const cols=new Map();
+  for(const d of frames)for(let i=0;i<d.length;i+=4){if(transp&&d[i+3]<128)continue;const k=(d[i]>>2)<<12|(d[i+1]>>2)<<6|(d[i+2]>>2);cols.set(k,(cols.get(k)||0)+1)}
+  let boxes=[[...cols.entries()]];const maxN=transp?255:256;
+  while(boxes.length<maxN){let bi=-1,br=0,bc=0;
+    boxes.forEach((b,i)=>{if(b.length<2)return;for(let c=0;c<3;c++){let lo=63,hi=0;for(const [k] of b){const v=k>>(12-6*c)&63;if(v<lo)lo=v;if(v>hi)hi=v}const r=(hi-lo)*Math.log2(b.length+1);if(r>br){br=r;bi=i;bc=c}}});
+    if(bi<0)break;const b=boxes[bi],sh=12-6*bc;b.sort((p,q)=>(p[0]>>sh&63)-(q[0]>>sh&63));
+    let tot=0,half=0;for(const e of b)tot+=e[1];let m=1;for(;m<b.length-1;m++){half+=b[m-1][1];if(half*2>=tot)break}
+    boxes.splice(bi,1,b.slice(0,m),b.slice(m))}
+  const pal=boxes.map(b=>{let r=0,g=0,bl=0,n=0;for(const [k,c] of b){r+=(k>>12&63)*c;g+=(k>>6&63)*c;bl+=(k&63)*c;n+=c}return [r/n*4.06|0,g/n*4.06|0,bl/n*4.06|0]});
+  if(transp)pal.unshift([0,0,0]);while(pal.length<256)pal.push([0,0,0]);return pal}
+function gifIndex(d,pal,transp,memo){const out=new Uint8Array(d.length/4);
+  for(let i=0,p=0;i<d.length;i+=4,p++){if(transp&&d[i+3]<128){out[p]=0;continue}const k=(d[i]>>2)<<12|(d[i+1]>>2)<<6|(d[i+2]>>2);let ix=memo.get(k);
+    if(ix===undefined){let best=1e9;ix=0;for(let j=transp?1:0;j<pal.length;j++){const q=pal[j],dr=q[0]-d[i],dg=q[1]-d[i+1],db=q[2]-d[i+2],e=dr*dr*2+dg*dg*4+db*db*3;if(e<best){best=e;ix=j}}memo.set(k,ix)}out[p]=ix}
+  return out}
+function gifLZW(px){const out=[];let cur=0,bits=0;const emit=(c,n)=>{cur|=c<<bits;bits+=n;while(bits>=8){out.push(cur&255);cur>>>=8;bits-=8}};
+  const CLR=256,EOI=257;let dict=new Map(),next=258,size=9;emit(CLR,size);let w=px[0];
+  for(let i=1;i<px.length;i++){const k=px[i],key=w*4096+k,v=dict.get(key);if(v!==undefined){w=v;continue}
+    emit(w,size);if(next<4096){dict.set(key,next++);if(next>(1<<size)&&size<12)size++}else{emit(CLR,size);dict=new Map();next=258;size=9}w=k}
+  emit(w,size);emit(EOI,size);if(bits)out.push(cur&255);return out}
+function makeGif(frames,w,h,delayCs,transp){const pal=gifPalette(frames,transp),memo=new Map(),o=[];const s=t=>{for(const ch of t)o.push(ch.charCodeAt(0))},w16=v=>o.push(v&255,v>>8&255);
+  s('GIF89a');w16(w);w16(h);o.push(0xF7,0,0);for(const c of pal)o.push(c[0],c[1],c[2]);
+  o.push(0x21,0xFF,11);s('NETSCAPE2.0');o.push(3,1,0,0,0);
+  for(const d of frames){o.push(0x21,0xF9,4,transp?9:4);w16(delayCs);o.push(0,0);o.push(0x2C);w16(0);w16(0);w16(w);w16(h);o.push(0,8);
+    const data=gifLZW(gifIndex(d,pal,transp,memo));for(let i=0;i<data.length;i+=255){const n=Math.min(255,data.length-i);o.push(n);for(let j=0;j<n;j++)o.push(data[i+j])}o.push(0)}
+  o.push(0x3B);return new Uint8Array(o)}
+const POSE_LOOP={walk:2*Math.PI*230*2,run:2*Math.PI*140*3,wave:2*Math.PI*160*3};
+function renderGif(size=288,N=40){const bg=RBG[renderBg],transp=!bg,T=POSE_LOOP[pose]||2890,frames=[];
+  const opt=i=>({yaw:yaw+360*i/N,R:poseAt(i*T/N),noShadow:transp});let box=[1e9,-1e9,1e9,-1e9];
+  for(let i=0;i<N;i++){const m=renderPNG(size,bg,{...opt(i),measure:true});box=[Math.min(box[0],m[0]),Math.max(box[1],m[1]),Math.min(box[2],m[2]),Math.max(box[3],m[3])]}
+  for(let i=0;i<N;i++){const c=renderPNG(size,bg,{...opt(i),box});frames.push(c.getContext('2d').getImageData(0,0,size,size).data)}
+  return makeGif(frames,size,size,Math.max(2,Math.round(T/N/10)),transp)}
+function saveGif(btn){if(btn){btn.disabled=true;btn.textContent='Собираю GIF…'}
+  setTimeout(()=>{let ok=false;try{const g=renderGif();ok=true;saveFile(fileName()+'.gif',new Blob([g],{type:'image/gif'}),'GIF сохранён: '+fileName()+'.gif — можно кидать в Discord или Telegram')}
+    catch(e){toast('Не получилось собрать GIF')}finally{if(btn){btn.disabled=false;btn.textContent='Сохранить GIF (крутится)'}}},30)}
 function saveRender(){renderPNG(1024,RBG[renderBg]).toBlob(b=>saveFile(fileName()+'-render.png',b,'Картинка персонажа сохранена: '+fileName()+'-render.png'),'image/png')}
 function setPose(p){pose=p;const s=$('#poseSel');if(s)s.value=p}
 let animT=0,lastRT=0;function tick(t){
@@ -1940,7 +1978,8 @@ function renderDone(body){
   try{ri.src=renderPNG(256,RBG[renderBg]).toDataURL()}catch(e){}const rc=el('div');const bgRow=el('div','tools');
   [['none','Прозрачный'],['dark','Тёмный'],['light','Светлый'],['blue','Синий']].forEach(([v,l])=>{const b=el('button','chip',l);b.type='button';b.setAttribute('aria-pressed',renderBg===v);b.onclick=()=>{renderBg=v;renderPanel()};bgRow.appendChild(b)});
   const sb=el('button','btn primary','Сохранить картинку PNG');sb.type='button';sb.style.marginTop='8px';sb.onclick=saveRender;
-  rc.append(el('p','note','Фон'),bgRow,sb);rw.append(ri,rc);rs.appendChild(rw);body.appendChild(rs);
+  const gb=el('button','btn','Сохранить GIF (крутится)');gb.type='button';gb.id='gifBtn';gb.style.marginTop='6px';gb.title='Анимация: персонаж поворачивается вокруг себя в выбранной позе (ходьба, бег, привет…). Удобно кидать друзьям';gb.onclick=()=>saveGif(gb);
+  rc.append(el('p','note','Фон'),bgRow,sb,gb);rw.append(ri,rc);rs.appendChild(rw);body.appendChild(rs);
   const modelName=state.model==='slim'?'«Тонкая» (узкие руки)':'«Классическая» (широкие руки)';
   const ins=secEl('Как поставить скин'),box=el('div','inst');
   const item=(t,txt,m)=>{const d=el('div');d.appendChild(el('b',null,t));d.appendChild(document.createTextNode(txt));if(m)d.appendChild(el('div','muted',m));box.appendChild(d)};
@@ -2201,7 +2240,7 @@ async function natSave(fn,blob){// null — отменено, иначе пут�
   const ext=((fn.match(/\.(\w+)$/)||[])[1]||'').toLowerCase();let dir='';
   try{dir=localStorage.getItem('mcskin.dir')||''}catch(e){}
   if(!dir){try{dir=await NAT.os.getPath('downloads')}catch(e){}}
-  let path=await NAT.os.showSaveDialog(/-render\.png$/i.test(fn)?'Сохранить картинку':ext==='png'?'Сохранить скин':'Сохранить проект',{defaultPath:dir?dir.replace(/[\\/]+$/,'')+natSep()+fn:fn,filters:[{name:ext==='png'?'Скин PNG':'Проект Скин-студии',extensions:[ext||'*']},{name:'Все файлы',extensions:['*']}]});
+  let path=await NAT.os.showSaveDialog(/-render\.png$/i.test(fn)?'Сохранить картинку':ext==='gif'?'Сохранить GIF':ext==='png'?'Сохранить скин':'Сохранить проект',{defaultPath:dir?dir.replace(/[\\/]+$/,'')+natSep()+fn:fn,filters:[{name:ext==='gif'?'Анимация GIF':ext==='png'?'Скин PNG':'Проект Скин-студии',extensions:[ext||'*']},{name:'Все файлы',extensions:['*']}]});
   if(!path)return null;
   if(ext&&!new RegExp('\\.'+ext+'$','i').test(path))path+='.'+ext;
   await NAT.filesystem.writeBinaryFile(path,await blob.arrayBuffer());
@@ -2213,7 +2252,7 @@ async function natSaveUI(fn,blob,okMsg){// true/false, как и обычное 
     toastAction(okMsg,'Показать в папке',()=>natShow(p));return true}
   catch(e){toast('Не получилось сохранить файл: '+((e&&e.message)||'нет доступа к папке'));return false}}
 /* обновления программы: на сайте лежит version.json с номером свежей версии. Скачивание — только со страницы релизов этого проекта */
-const APP_VERSION='1.4.5';// единственное место с номером версии: отсюда же его берёт сборка программы
+const APP_VERSION='1.5.0';// единственное место с номером версии: отсюда же его берёт сборка программы
 const UPD_URL='https://enotsbeye.github.io/skin-studio/version.json',REL_OK=/^https:\/\/github\.com\/Enotsbeye\/skin-studio\//;
 // ссылка «Поддержать» берётся с сайта (version.json → donate) — её можно поменять без выпуска новой версии; только известные сервисы
 const DONATE_OK=/^https:\/\/(ko-fi\.com|boosty\.to|www\.buymeacoffee\.com|buymeacoffee\.com|paypal\.me|www\.paypal\.me|github\.com\/sponsors|patreon\.com|www\.patreon\.com)\//;

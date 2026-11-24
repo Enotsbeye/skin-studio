@@ -123,6 +123,8 @@ with sync_playwright() as p:
       window.fetch=of;DONATE='';openAbout();const ab=$('#mBody').textContent;closeModal();openStart(false);const st=$('#mBody').textContent;closeModal();
       return [bad,good,ab.includes('Не официальный продукт Minecraft')&&ab.includes('NOT AN OFFICIAL MINECRAFT'),st.includes('Не официальный продукт Minecraft'),APP_VERSION]}""")
     res.append(('«О программе» и стартовый экран с пометкой Mojang; «Поддержать» только с проверенной ссылкой',r[:4]==[True,True,True,True],r))
+    g=pg.evaluate("()=>{applyTemplate(3);renderBg='none';setPose('walk');const a=renderGif(96,12);renderBg='dark';const b=renderGif(96,12);setPose('stand');const hd=x=>String.fromCharCode(...x.slice(0,6));let fr=0;for(let i=0;i<b.length-1;i++)if(b[i]===0x2C&&b[i-1]===0)fr++;return [hd(a),hd(b),a[a.length-1],b.length>2000,fr>=12]}")
+    res.append(('GIF «крутится»: корректный файл с кадрами, прозрачный и с фоном',g[0]=='GIF89a' and g[1]=='GIF89a' and g[2]==0x3B and g[3] and g[4]))
     res.append(('нет ошибок',not errs))
     pg2=b.new_page();e2=[];pg2.on('pageerror',lambda e:e2.append(str(e)))
     pg2.add_init_script("Storage.prototype.setItem=function(){throw new Error('QuotaExceeded')}")
