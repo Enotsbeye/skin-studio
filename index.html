@@ -317,6 +317,7 @@ body.gift ::selection{background:#a3263f;color:#fff}
 .aboutbtns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}p.muted{color:var(--muted);font-size:12.5px;line-height:1.45}
 .hello{margin:0 0 12px;padding:12px 14px;border-radius:8px;background:linear-gradient(135deg,#4d1828,#2a161d);color:#ffe8ee;font-size:14px}
 .hello b{color:#fff}
+.stylerow{display:flex;flex-wrap:wrap;gap:6px}.stylechip{display:inline-flex;align-items:center;gap:6px}.sw4{display:inline-flex;border-radius:4px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.18)}.sw4 i{display:block;width:7px;height:14px}
 </style>
 </head>
 <body data-mode="build">
@@ -410,9 +411,9 @@ const OPT={
   shoes:[['sneakers','Кроссовки'],['hightops','Кеды'],['slipons','Слипоны'],['boots','Ботинки'],['cowboy','Ковбойские сапоги'],['rainboots','Резиновые сапоги'],['formal','Туфли'],['sandals','Сандалии'],['socks','Носки'],['kneesocks','Гольфы'],['stripedsocks','Полосатые гольфы'],['armored','Латные сапоги'],['barefoot','Босиком']],
   pattern:[['none','Без узора'],['camo','Камуфляж'],['plaid','Клетка'],['stripes','Полоски'],['vstripes','Вертикальные полоски'],['dots','Горошек'],['checker','Шахматка'],['gradient','Градиент']],
   hairDye:[['none','Без окрашивания'],['ombre','Омбре'],['tips','Цветные кончики'],['streaks','Прядки']],
-  acc:[['glasses','Очки','headFB'],['sunglasses','Тёмные очки','headFB'],['cap','Кепка','headFB'],['beanie','Шапка','headFB'],['headband','Повязка','headFB'],['crown','Корона','headFB'],['headphones','Наушники','headFB'],['mask','Маска','headFB'],['scarf','Шарф','bodyFB'],['backpack','Рюкзак','bodyFB'],['gloves','Перчатки','bodyFB'],['helmet','Каска','headFB'],['gasmask','Противогаз','headFB'],['balaclava','Балаклава','headFB'],['platecarrier','Плитоноска','bodyFB'],['chestrig','Разгрузка','bodyFB'],['patches','Нашивки','bodyFB'],['fingerless','Перчатки без пальцев','bodyFB'],['kneepads','Наколенники','bodyFB'],['catears','Кошачьи ушки','headFB'],['horns','Рожки','headFB']]
+  acc:[['glasses','Очки','headFB'],['sunglasses','Тёмные очки','headFB'],['cap','Кепка','headFB'],['beanie','Шапка','headFB'],['headband','Повязка','headFB'],['crown','Корона','headFB'],['headphones','Наушники','headFB'],['mask','Маска','headFB'],['scarf','Шарф','bodyFB'],['backpack','Рюкзак','bodyFB'],['gloves','Перчатки','bodyFB'],['helmet','Каска','headFB'],['gasmask','Противогаз','headFB'],['balaclava','Балаклава','headFB'],['platecarrier','Плитоноска','bodyFB'],['chestrig','Разгрузка','bodyFB'],['patches','Нашивки','bodyFB'],['fingerless','Перчатки без пальцев','bodyFB'],['kneepads','Наколенники','bodyFB'],['catears','Кошачьи ушки','headFB'],['horns','Рожки','headFB'],['catphones','Наушники с ушками','headFB'],['bow','Бант','headFB'],['hairclips','Заколки','headFB'],['earrings','Серёжки','headFB'],['choker','Чокер','bodyFB'],['tassel','Шарф с кисточками','bodyFB']]
 };
-const ACC_GROUPS=[['cap','beanie','crown','headband','helmet'],['glasses','sunglasses'],['mask','gasmask','balaclava'],['platecarrier','chestrig'],['gloves','fingerless']];
+const ACC_GROUPS=[['cap','beanie','crown','headband','helmet'],['headphones','catphones'],['catears','catphones'],['scarf','tassel'],['choker','scarf','tassel'],['glasses','sunglasses'],['mask','gasmask','balaclava'],['platecarrier','chestrig'],['gloves','fingerless']];
 const PAL={
   skin:['#fff1e8','#ffe0c7','#f5cba7','#e8b48a','#d39b6a','#b57a4b','#8d5a35','#6b4226','#4a2c19','#9fc98a','#8fb6e8','#c9c9c9','#d8b4f0'],
   eyes:['#3b6fd6','#2e9e5b','#7a4a26','#3a2a1e','#8a8f99','#9b4fd6','#d63b3b','#e0b030'],
@@ -507,7 +508,20 @@ const TPL_SRC=[
   ['a','#d9b35c','#1a1a1d','#c62828','#1a1a1d','#1a1a1d','#2b2b2e','#3b6fd6',{hair:'verylong',acc:['sunglasses']}],['e','#1d1a19','#2b2b2e','#e6b422','#1a1a1d','#1a1a1d','#2b2b2e','#3a2a1e',{hair:'kneebangs',beard:'full'}]]],
  ['Эмо','m',{eyes:'tired',mouth:'sad',brows:'sad',hair:'emo',top:'hoodie',print:'none',bottom:'jeans',shoes:'hightops'},[
   ['a','#1d1a19','#1a1a1d','#c62828','#1a1a1d','#1a1a1d','#2b2b2e','#8a8f99'],['a','#1d1a19','#2b2b2e','#7b3fa0','#1a1a1d','#f2f2f2','#2b2b2e','#9b4fd6',{hairDye:'streaks',hairColor2:'#7b3fa0'}],
-  ['b','#e8e8e8','#1a1a1d','#f2f2f2','#2b2b2e','#1a1a1d','#2b2b2e','#d63b3b'],['c','#1d1a19','#8e1b2a','#1a1a1d','#1a1a1d','#8e1b2a','#2b2b2e','#7a4a26',{hair:'longbangs'}]]]
+  ['b','#e8e8e8','#1a1a1d','#f2f2f2','#2b2b2e','#1a1a1d','#2b2b2e','#d63b3b'],['c','#1d1a19','#8e1b2a','#1a1a1d','#1a1a1d','#8e1b2a','#2b2b2e','#7a4a26',{hair:'longbangs'}]]],
+ /* новые (1.6): пастельный стиль — чёлки до ресниц, мягкие глаза, румянец, милые аксессуары */
+ ['Зефирка','f',{eyes:'softbig',mouth:'tiny',cheeks:'blush',hair:'longbangs',top:'oversize',print:'heart',bottom:'skirt',shoes:'kneesocks',acc:['catphones'],isNew:true},[
+  ['a','#f6c1d4','#f6f2f0','#f49ac1','#f49ac1','#5a4a52','#f49ac1','#9b6fd6'],['a','#b9e6d3','#f6f2f0','#7fcfb1','#5f6f8a','#4d5560','#7fcfb1','#4aa3a0'],
+  ['a','#cdb8ee','#2b2b2e','#a98bdc','#a98bdc','#4d4560','#a98bdc','#7b5fd6'],['b','#7a5236','#ffe9d9','#f6a98a','#8a5a46','#5a4a42','#f6a98a','#5a8a5a']]],
+ ['Соня','f',{eyes:'soft',mouth:'tiny',cheeks:'blush',hair:'bob',top:'sweater',bottom:'longskirt',shoes:'boots',acc:['hairclips'],isNew:true},[
+  ['a','#3b2b26','#e9d6c2','#c9a88a','#8a6b5a','#5a4036','#f4a6c8','#7a4a26'],['a','#e9d9b0','#c9d8ea','#9bb4d6','#f2efe6','#8a6b5a','#9bb4d6','#3b6fd6'],
+  ['b','#1d1a19','#d9c6e8','#a98bdc','#2b2b2e','#2b2b2e','#f6c1d4','#9b4fd6'],['c','#b85a3a','#e8eedd','#9fb38a','#5f6f4a','#5a4036','#f6a98a','#2e9e5b']]],
+ ['Звёздочка','f',{eyes:'softbig',mouth:'catmouth',cheeks:'blush',hair:'twintails',top:'dress',bottom:'skirt',shoes:'stripedsocks',acc:['bow'],isNew:true},[
+  ['a','#fbf3e4','#2b2b2e','#f6c1d4','#2b2b2e','#f6c1d4','#f49ac1','#c45a8a'],['a','#1d1a19','#cdb8ee','#2b2b2e','#a98bdc','#2b2b2e','#2b2b2e','#7b5fd6',{acc:['bow','choker']}],
+  ['b','#f2a7b8','#bfe3d6','#f2f2f2','#7fcfb1','#f2f2f2','#f2a7b8','#4aa3a0'],['a','#9ec9f0','#f2f2f2','#9ec9f0','#5f8fc9','#9ec9f0','#9ec9f0','#3b6fd6',{hair:'spacebuns'}]]],
+ ['Мятный','m',{eyes:'soft',mouth:'tiny',cheeks:'blush',brows:'normal',hair:'curtain',top:'hoodie',print:'none',bottom:'jeans',shoes:'hightops',acc:['headphones'],isNew:true},[
+  ['a','#f2f2f2','#bfe3d6','#7fcfb1','#4d5560','#f2f2f2','#7fcfb1','#4aa3a0'],['b','#3b2b26','#c9d8ea','#9bb4d6','#2b2b2e','#f2f2f2','#9bb4d6','#3b6fd6'],
+  ['a','#cdb8ee','#2b2b2e','#a98bdc','#4d4560','#f2f2f2','#cdb8ee','#9b4fd6',{acc:['catphones']}],['c','#1d1a19','#f6c1d4','#f49ac1','#2b2b2e','#2b2b2e','#f6c1d4','#7a4a26',{acc:['earrings']}]]]
 ];
 const LONG_HAIR=['long','longbangs','wavy','verylong','wavywaist','knee','kneebangs','longside','longpony','bangslong','braid','twobraids'];
 function muteEye(h){const c=parseInt(h.slice(1),16),r=c>>16&255,g=c>>8&255,b=c&255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/510;
@@ -516,7 +530,7 @@ function muteEye(h){const c=parseInt(h.slice(1),16),r=c>>16&255,g=c>>8&255,b=c&2
 const TEMPLATES=[];TPL_SRC.forEach(([name,g,base,vars])=>vars.forEach((v,i)=>{const [sk,hc,tc,tc2,bc,shc,ac,ec,over]=v;
   const t=Object.assign({},g==='f'?F0:M0,{cheeks:'none',mouth:'smile',print:'none',topPattern:'none',bottomPattern:'none',hairDye:'none',acc:[]},base,
     {skin:SK[sk]||sk,hairColor:hc,topColor:tc,topColor2:tc2,bottomColor:bc,bottomColor2:tc2,shoesColor:shc,accColor:ac,eyeColor:muteEye(ec),eyeColor2:muteEye(ec)},over||{});
-  TEMPLATES.push({n:name+' '+(i+1),g,s:t})}));
+  const isNew=!!t.isNew;delete t.isNew;TEMPLATES.push({n:name+' '+(i+1),g,s:t,isNew})}));
 
 const CATS=[
   {id:'tpl',t:'Шаблоны',h:'Выбери готового человека, потом меняй что хочешь во вкладках дальше. Или рисуй поверх в «Рисовании».'},
@@ -666,7 +680,8 @@ function drawFace(s,P){
     case 'hetero':both(1,4,lash);both(2,4,lash);E(1,5,mix(wh,sk,.22));E(2,5,ir);M(1,5,mix(wh,sk,.22));M(2,5,ir2);break;
   }
   // у девушек ресница выходит на 1 px за глаз
-  if(s.figure&&s.figure!=='male'&&['classic','soft','softbig','hetero','wink'].includes(s.eyes)){E(0,4,lash);if(s.eyes!=='wink')M(0,4,lash)}
+  // хвостик ресниц у девушек; у обычных глаз — мягче, иначе ряд из 6 тёмных пикселей издалека выглядит как очки
+  if(s.figure&&s.figure!=='male'&&['classic','soft','softbig','hetero','wink'].includes(s.eyes)){const lx=soft?lash:mix(lash,sk,.42);E(0,4,lx);if(s.eyes!=='wink')M(0,4,lx)}
   // между бровью и ресницами всегда 1 ряд кожи — иначе брови и ресницы сливаются в одну толстую полосу
 const br=(s.eyes==='big'||s.eyes==='anime'||s.eyes==='cat'||s.eyes==='glow'||s.eyes==='sleepy'||['classic','hetero','wink','narrow','tired'].includes(s.eyes))?2:3;
   // у девушек брови мягче: тон волос, смешанный с кожей (а не тёмная полоса над ресницами)
@@ -900,6 +915,17 @@ function drawAcc(s,P){
   if(has('catears')){const hc=rgb(s.hairColor),pk=[240,170,190];for(const x of [0,1,6,7])for(let z=3;z<7;z++)T(O,x,z,hc,.08);T(O,1,4,pk,0);T(O,6,4,pk,0);T(O,1,5,pk,0);T(O,6,5,pk,0);
     [0,1,6,7].forEach(x=>F(O,x,0,hc,.08));F(O,1,0,pk,0);F(O,6,0,pk,0)}
   if(has('horns')){const iv=s.accColor&&s.accColor.toLowerCase()!=='#2b2b2e'?rgb(s.accColor):[232,222,200],tip=shade(iv,.6);for(const x of [1,6]){T(O,x,5,iv,.04);T(O,x,6,iv,.04);F(O,x,0,iv,.04)}T(O,1,4,tip,0);T(O,6,4,tip,0)}
+  /* милые аксессуары: цвет — «цвет аксессуара» */
+  if(has('catphones')){const lt=mix(ac,[255,255,255],.35),in2=mix(ac,[255,170,200],.5);for(let x=0;x<8;x++){T(O,x,3,lt,.04);T(O,x,4,lt,.04)}
+    for(const x of [0,1,6,7])for(let z=2;z<6;z++)T(O,x,z,ac,.05);T(O,1,3,in2,0);T(O,6,3,in2,0);T(O,1,4,in2,0);T(O,6,4,in2,0);
+    sideR(O,3,0,2,3,lt,.04);sideL(O,3,0,2,3,lt,.04);sideR(O,2,3,4,3,ac,.05);sideL(O,2,3,4,3,ac,.05);sideR(O,3,4,2,1,in2,0);sideL(O,3,4,2,1,in2,0)}
+  // бант сбоку на макушке: две петли по 2 пикселя и тёмный узелок, хвостики вниз; виден спереди уголком
+  if(has('bow')){const k=shade(ac,.7),lt=mix(ac,[255,255,255],.3);sideL(O,1,0,2,3,ac,.04);sideL(O,5,0,2,3,ac,.04);sideL(O,1,0,1,1,lt,0);sideL(O,6,0,1,1,lt,0);sideL(O,3,1,2,1,k,0);sideL(O,3,0,2,1,ac,.04);sideL(O,3,2,1,2,shade(ac,.85),.03);sideL(O,4,2,1,1,shade(ac,.85),.03);
+    F(O,7,0,ac,.04);F(O,7,1,k,0);for(let z=1;z<6;z++)T(O,7,z,z===3?k:ac,.04)}
+  if(has('hairclips')){const c2=mix(ac,[255,255,255],.25);F(O,6,1,c2,0);F(O,7,2,c2,0);F(O,6,2,shade(ac,.85),0)}
+  if(has('earrings')){const g=s.accColor&&lumA(ac)>60?ac:[236,196,92];sideR(O,4,6,1,1,g,0);sideR(O,4,7,1,1,mix(g,[255,255,255],.35),0);sideL(O,3,6,1,1,g,0);sideL(O,3,7,1,1,mix(g,[255,255,255],.35),0)}
+  if(has('choker')){const c=[34,30,36];band(J,0,1,c,.03);F(J,3,1,ac,0);F(J,4,1,ac,0)}
+  if(has('tassel')){const st=mix(ac,[255,255,255],.3);band(J,0,2,ac,.08);band(J,1,2,st,.04);capT(J,ac,.08);Fr(J,1,2,2,5,ac,.08);Fr(J,1,3,2,1,st,.04);Fr(J,1,5,2,1,st,.04);F(J,1,7,ac,.05);F(J,2,7,shade(ac,.8),.05);F(J,1,8,shade(ac,.85),0)}
   /* tactical set */
   if(has('balaclava')){const c=[28,28,30];capT(O,c,.08);sidesBack(O,0,8,c,.08);Fr(O,0,0,8,8,c,.08);Fclr(O,1,e0,6,e1-e0+1)}
   if(has('gasmask')){const rb=[44,46,44],ln=[62,86,98],st=[30,30,30],top=Math.max(0,e0-1);Fr(O,0,top,8,8-top,rb,.06);
@@ -1533,6 +1559,16 @@ const SCHEMES=[['#e8dccb','#8e1b2a','#5a4a42','#1a1a1d','#2b2b2e'],['#9aa7b8','#
   ['#f2c6cf','#ffffff','#9aa7b8','#f2f2f2','#e573a8'],['#7a4b2a','#e8d9b5','#2f4f3a','#4a3020','#c9a66b'],['#2f80d1','#f2f2f2','#1f3c73','#f2f2f2','#e6b422'],
   ['#5a4a42','#c9b8a6','#1a1a1d','#c9b8a6','#8e1b2a'],['#e6b422','#2b2b2e','#2b2b2e','#f2f2f2','#2b2b2e'],['#8e1b2a','#e8dccb','#1a1a1d','#1a1a1d','#e8dccb']];
 let schemeI=Math.random()*SCHEMES.length|0;
+/* стили одной кнопкой: перекрашивают одежду, обувь и аксессуары в согласованные цвета (волосы, кожа и глаза не трогаем) */
+const STYLES=[['Пастель','#f6f2f0','#f4a6c8','#b9a3e3','#f4a6c8','#f6f2f0','#9fd8c6'],['Конфетка','#ffd1dc','#9ee6f0','#c9b6f2','#fff1a8','#ffd1dc','#9ee6f0'],
+  ['Мятный лёд','#d8f3ea','#4aa3a0','#6c7a89','#d8f3ea','#f2f2f2','#4aa3a0'],['Готика','#1a1a1d','#8e1b2a','#1a1a1d','#8e1b2a','#1a1a1d','#c0c0c8'],
+  ['Киберпанк','#1c1f2b','#00e5ff','#2b2140','#ff2bd6','#1c1f2b','#ff2bd6'],['Уютная осень','#c9864a','#f2e6d0','#5a4036','#f2e6d0','#5a4036','#8e3b2a'],
+  ['Тёмная академия','#5a4a3a','#e8dccb','#3b2f2a','#8a6b4a','#2b2522','#8a6b4a'],['Лес','#4f6b3a','#d9c89a','#5a4a32','#d9c89a','#3b2f22','#a3542a'],
+  ['Морская','#f2f2f2','#1f3c73','#1f3c73','#f2f2f2','#f2f2f2','#c62828'],['Монохром','#f2f2f2','#1a1a1d','#2b2b2e','#f2f2f2','#f2f2f2','#1a1a1d']];
+function applyStyle(i){const [n,a,b,c,d,e,f]=STYLES[i];pushHist('');Object.assign(state,{topColor:a,topColor2:b,bottomColor:c,bottomColor2:d,shoesColor:e,accColor:f});update(true);toast('Стиль «'+n+'»: одежда перекрашена. Волосы и глаза — без изменений')}
+function stylesSec(){const sec=secEl('Стиль одной кнопкой','Перекрашивает одежду, обувь и аксессуары в подходящие друг к другу цвета. Волосы, кожу и глаза не меняет. Отменить — Ctrl+Z.'),row=el('div','stylerow');
+  STYLES.forEach((st,i)=>{const b=el('button','chip stylechip');b.type='button';b.title='Применить стиль «'+st[0]+'»';const sw=el('span','sw4');[1,2,3,6].forEach(k=>{const q=el('i');q.style.background=st[k];sw.appendChild(q)});b.append(sw,document.createTextNode(st[0]));b.onclick=()=>applyStyle(i);row.appendChild(b)});
+  sec.appendChild(row);return sec}
 function harmonize(){pushHist('');schemeI=(schemeI+1)%SCHEMES.length;const [a,b,c,d,e]=SCHEMES[schemeI];
   Object.assign(state,{topColor:a,topColor2:b,bottomColor:c,bottomColor2:b,shoesColor:d,accColor:e});update(true);toast(`Цвета подобраны (вариант ${schemeI+1} из ${SCHEMES.length}). Нажми ещё раз для другого`)}
 function goMode(m){go(m==='build'?lastBuild:IDX[m])}
@@ -1774,7 +1810,7 @@ function hexInput(id,value,onLive,onCommit){
   inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();commit()}};inp.onblur=()=>{if(inp.value.trim()&&normHex(inp.value)!==value)commit()};
   w.append(el('span',null,'HEX'),inp);return w;
 }
-function withAcc(v){let a=state.acc.slice();const g=ACC_GROUPS.find(g=>g.includes(v));if(g)a=a.filter(x=>!g.includes(x));a.push(v);return a}
+function withAcc(v){let a=state.acc.slice();for(const g of ACC_GROUPS)if(g.includes(v))a=a.filter(x=>x===v||!g.includes(x));a=a.filter(x=>x!==v);a.push(v);return a}
 function resetEdits(){pushHist('');setSingleLayer(emptyE());syncE();update(true);toast('Ручные правки сброшены')}
 function editsBanner(){const n=editCount();if(!n)return null;const b=el('div','banner'),t=el('span',null,`Ручные правки: ${n} пикс.`),btn=el('button','btn','Сбросить правки');btn.type='button';btn.onclick=resetEdits;b.append(t,btn);return b}
 
@@ -2018,7 +2054,7 @@ function setSimple(v){uiSimple=v;try{localStorage.setItem('mcskin.ui',v?'simple'
   applyUi();renderPanel();fit()}
 function applyUi(){document.body.classList.toggle('simple',uiSimple);const b=$('#uiBtn');if(b)b.textContent=uiSimple?'Все инструменты':'Простой вид'}
 let tplFilter='all';const TPL_THUMB=[];let tplJob=0;
-const TPL_FILTERS=[['all','Все'],['f','Девушки'],['m','Парни'],['long','Длинные волосы']];
+const TPL_FILTERS=[['all','Все'],['new','Новые'],['f','Девушки'],['m','Парни'],['long','Длинные волосы']];
 function tplState(i){return sanitize(Object.assign(clone(DEFAULT),TEMPLATES[i].s,{name:state.name}))}
 function tplThumb(i){if(TPL_THUMB[i])return TPL_THUMB[i];const st=tplState(i),c=document.createElement('canvas');c.width=c.height=64;
   c.getContext('2d').putImageData(new ImageData(paint(st),64,64),0,0);
@@ -2039,6 +2075,7 @@ function applyTemplate(i){endPreview();const had=editCount()>0;pushHist('');cons
 function saveToSlot(){const a=getSlots();let i=a.findIndex(x=>!x);if(i<0){toast('Все 8 слотов заняты — удали ненужного (✕) и сохрани снова');return}syncE();a[i]=clone(state);setSlots(a);renderPanel();toast('Сохранено в «Мои персонажи»')}
 function renderTemplates(body){
   if(giftMode){const h=el('div','hello');h.innerHTML=GT.tpl;body.appendChild(h)}
+  body.appendChild(stylesSec());
   {const sec=secEl('Мои персонажи','Твои сохранённые персонажи (до 8). Нажми, чтобы загрузить.'),slots=getSlots(),row=el('div','tplgrid myrow');
     slots.forEach((sv,i)=>{if(!sv)return;const st=sanitize(sv),b=el('button','tplc');b.type='button';b.title=st.name||('Слот '+(i+1));
       const im=document.createElement('img');im.alt='';try{const c=document.createElement('canvas');c.width=c.height=64;c.getContext('2d').putImageData(new ImageData(applyEdits(paint(st),deser(st.edits)),64,64),0,0);
@@ -2048,7 +2085,7 @@ function renderTemplates(body){
     const add=el('button','tplc addslot');add.type='button';add.title='Сохранить текущего персонажа в «Мои»';add.append(el('i',null,'+'),el('span',null,'Сохранить текущего'));add.onclick=saveToSlot;row.appendChild(add);
     sec.appendChild(row);body.appendChild(sec)}
   const fw=el('div','tplf');TPL_FILTERS.forEach(([v,l])=>{const b=el('button','chip',l);b.type='button';b.setAttribute('aria-pressed',tplFilter===v);b.onclick=()=>{tplFilter=v;renderPanel()};fw.appendChild(b)});body.appendChild(fw);
-  const idx=TEMPLATES.map((t,i)=>i).filter(i=>{const t=TEMPLATES[i];return tplFilter==='all'||(tplFilter==='long'?LONG_HAIR.includes(t.s.hair):t.g===tplFilter)});
+  const idx=TEMPLATES.map((t,i)=>i).filter(i=>{const t=TEMPLATES[i];return tplFilter==='all'||(tplFilter==='new'?t.isNew:tplFilter==='long'?LONG_HAIR.includes(t.s.hair):t.g===tplFilter)});
   const g=el('div','tplgrid');g.setAttribute('role','list');
   const cards=idx.map(i=>{const b=el('button','tplc tplt');b.type='button';b.setAttribute('role','listitem');b.title=TEMPLATES[i].n;b.dataset.i=i;
     const im=document.createElement('img');im.alt='';im.width=im.height=128;if(TPL_THUMB[i])im.src=TPL_THUMB[i];b.appendChild(im);b.appendChild(el('span','',TEMPLATES[i].n));b.onclick=()=>applyTemplate(i);g.appendChild(b);return [im,i]});
@@ -2252,7 +2289,7 @@ async function natSaveUI(fn,blob,okMsg){// true/false, как и обычное 
     toastAction(okMsg,'Показать в папке',()=>natShow(p));return true}
   catch(e){toast('Не получилось сохранить файл: '+((e&&e.message)||'нет доступа к папке'));return false}}
 /* обновления программы: на сайте лежит version.json с номером свежей версии. Скачивание — только со страницы релизов этого проекта */
-const APP_VERSION='1.5.0';// единственное место с номером версии: отсюда же его берёт сборка программы
+const APP_VERSION='1.6.0';// единственное место с номером версии: отсюда же его берёт сборка программы
 const UPD_URL='https://enotsbeye.github.io/skin-studio/version.json',REL_OK=/^https:\/\/github\.com\/Enotsbeye\/skin-studio\//;
 // ссылка «Поддержать» берётся с сайта (version.json → donate) — её можно поменять без выпуска новой версии; только известные сервисы
 const DONATE_OK=/^https:\/\/(ko-fi\.com|boosty\.to|www\.buymeacoffee\.com|buymeacoffee\.com|paypal\.me|www\.paypal\.me|github\.com\/sponsors|patreon\.com|www\.patreon\.com)\//;
